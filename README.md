@@ -227,6 +227,15 @@ While having a large set of features and integrations, our previous Elastic Clou
 You can monitor the creation and startup of the containers by running `docker events --filter event=create --filter event=start --filter event=mount
 ` on the server.
 
+### Connecting to the servers
+
+You can connect to a server by using the ssh key provided in the terraform directory.
+
+Example:
+```bash
+cd terraform && ssh -i terraform/id_ed25519 -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@2a02:1e8:c012:ddd1::1
+```
+
 ## Checkout these other tools we love at Askrella ❤️
 
 - [**Autobase**](https://github.com/vitabaks/autobase) allows us to provision a production ready Postgres cluster and provides a simple UI too.
