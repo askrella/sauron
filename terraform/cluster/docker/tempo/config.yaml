@@ -1,0 +1,39 @@
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+
+ingester:
+  trace_idle_period: 10s
+  max_block_bytes: 1_000_000
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 48h
+
+storage:
+  trace:
+    backend: s3
+    s3:
+      bucket: ${bucket}
+      endpoint: ${endpoint}
+      access_key: ${access_key}
+      secret_key: ${secret_key}
+      region: ${region}
+      insecure: false
+      prefix: "tempo/"
+    wal:
+      path: /tmp/tempo/wal
+      v2_encoding: snappy
+
+memberlist:
+  join_members:
+${tempo_members}

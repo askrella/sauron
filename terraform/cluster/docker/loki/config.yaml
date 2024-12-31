@@ -1,0 +1,77 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+  log_level: info
+
+limits_config:
+  ingestion_rate_mb: 10
+  ingestion_burst_size_mb: 30
+
+distributor:
+  ring:
+    kvstore:
+      store: inmemory
+
+ingester:
+  wal:
+    enabled: true
+    dir: /loki/wal
+  chunk_idle_period: 5m
+  max_chunk_age: 1h
+  chunk_retain_period: 30s
+  chunk_encoding: snappy
+  lifecycler:
+    enable_inet6: true
+    ring:
+      kvstore:
+        store: inmemory
+
+common:
+  path_prefix: /loki
+  storage:
+    s3:
+      bucketnames: ${bucket_name}
+      endpoint: "https://${bucket_endpoint}"
+      region: ${bucket_region}
+      access_key_id: ${bucket_access_key}
+      secret_access_key: ${bucket_access_secret}
+      insecure: false
+  ring:
+    zone_awareness_enabled: false
+  replication_factor: ${replication_factor}
+
+query_range:
+  parallelise_shardable_queries: true
+  cache_results: true
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/index_cache
+    cache_ttl: 24h
+  aws:
+    s3: "https://${bucket_access_key}:${bucket_access_secret}@nbg1.your-objectstorage.com/${bucket_name}"
+  object_prefix: "loki/"
+
+compactor:
+  working_directory: /loki/compactor
+
+schema_config:
+  configs:
+    - from: 2024-04-01
+      store: tsdb
+      object_store: s3
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+memberlist:
+  bind_port: 7947
+  join_members:
+${loki_members}
+
+analytics:
+  reporting_enabled: false

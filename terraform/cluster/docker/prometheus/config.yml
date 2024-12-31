@@ -1,0 +1,48 @@
+global:
+  scrape_interval: 3s
+  evaluation_interval: 3s
+  external_labels:
+    cluster: ${cluster}
+    node: ${node}
+    node_ip: ${node_ip}
+
+scrape_configs:
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor-${index}:8080']
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana-${index}:3000']
+
+  - job_name: 'loki'
+    static_configs:
+    - targets: ['loki-${index}:3100']
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter-${index}:9100'] 
+
+  - job_name: 'thanos-sidecar'
+    static_configs:
+      - targets: ['thanos-sidecar-${index}:10902']
+
+  - job_name: 'thanos-store-gateway'
+    static_configs:
+      - targets: ['thanos-store-${index}:10902']
+
+  - job_name: 'thanos-ruler'
+    static_configs:
+      - targets: ['thanos-ruler-${index}:10902']
+
+  - job_name: 'thanos-compactor'
+    static_configs:
+      - targets: ['thanos-compactor-${index}:10902']
+
+  - job_name: 'tempo'
+    static_configs:
+      - targets: ['tempo-${index}:3200']
