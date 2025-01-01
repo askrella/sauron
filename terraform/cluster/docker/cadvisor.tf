@@ -9,7 +9,7 @@ resource "docker_container" "cadvisor" {
   name  = "cadvisor-${var.index}"
   image = docker_image.cadvisor.image_id
 
-  restart = "no"
+  restart = "unless-stopped"
 
   ports {
     internal = 8080

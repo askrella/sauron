@@ -42,6 +42,8 @@ resource "docker_container" "prometheus" {
   name  = "prometheus-${var.index}"
   image = docker_image.prometheus.image_id
 
+  restart = "unless-stopped"
+
   ports {
     internal = 9090
     external = var.prometheus_port

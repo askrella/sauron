@@ -60,6 +60,8 @@ resource "docker_container" "loki" {
   name  = "loki-${var.index}"
   image = docker_image.loki.image_id
 
+  restart = "unless-stopped"
+
   ports {
     internal = 3100
     external = 3100

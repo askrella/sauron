@@ -98,7 +98,7 @@ resource "docker_container" "grafana" {
   name = "grafana-${var.index}"
   image = docker_image.grafana.image_id
 
-  restart = "no"
+  restart = "unless-stopped"
 
   ports {
     internal = 3000
@@ -258,6 +258,20 @@ providers:
   provisioner "file" {
     source      = "${path.module}/grafana/config/dashboards/thanos.json"
     destination = "${local.working_dir}/grafana/config/dashboards/thanos.json"
+
+    connection {
+      type        = "ssh"
+      user        = "root"
+      host        = var.server_ipv6_address
+      private_key = file(var.ssh_key_path)
+    }
+  }
+
+  provisioner "file" {
+    content     = templatefile("${path.module}/grafana/config/dashboards/askrella-loki.json", {
+      required_loki_nodes = local.node_count >= 3 ? 3 : local.node_count
+    })
+    destination = "${local.working_dir}/grafana/config/dashboards/askrella-loki.json"
 
     connection {
       type        = "ssh"

@@ -10,7 +10,7 @@ resource "docker_container" "node_exporter" {
   name  = "node-exporter-${var.index}"
   image = docker_image.node_exporter.image_id
 
-  restart = "no"
+  restart = "unless-stopped"
 
   ports {
     internal = 9100
