@@ -37,6 +37,99 @@
               "axisColorMode": "text",
               "axisLabel": "",
               "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "line"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 0.005
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "id": 6,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "sum(rate(loki_request_duration_seconds_sum{}[$__rate_interval])) by (node) / sum(rate(loki_request_duration_seconds_count{}[$__rate_interval])) by (node)\n",
+            "legendFormat": "__auto",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Loki Request Latency",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "P5DCFC7561CCDE821"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
               "axisSoftMin": 0,
               "barAlignment": 0,
               "barWidthFactor": 0.6,
@@ -72,7 +165,7 @@
               "steps": [
                 {
                   "color": "green",
-                  "value": 0
+                  "value": null
                 }
               ]
             }
@@ -293,7 +386,7 @@
               "steps": [
                 {
                   "color": "green",
-                  "value": 0
+                  "value": null
                 }
               ]
             },
@@ -343,8 +436,7 @@
     "schemaVersion": 40,
     "tags": [],
     "templating": {
-      "list": [
-      ]
+      "list": []
     },
     "time": {
       "from": "now-6h",
@@ -354,6 +446,6 @@
     "timezone": "browser",
     "title": "Loki Ring",
     "uid": "ee8otmk3gadq8d",
-    "version": 23,
+    "version": 28,
     "weekStart": ""
   }
