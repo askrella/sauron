@@ -14,6 +14,7 @@ variable "tempo_port" {
 resource "null_resource" "tempo_config_dirs" {
   provisioner "remote-exec" {
     inline = [
+      "mkdir -p ${local.working_dir}/tempo",
       "mkdir -p ${local.working_dir}/tempo/config",
       "mkdir -p ${local.working_dir}/tempo/data",
       "mkdir -p ${local.working_dir}/tempo/data/wal",
@@ -28,7 +29,11 @@ resource "null_resource" "tempo_config_dirs" {
     }
   }
 
-  depends_on = [null_resource.setup_directories]
+  triggers = {
+    timestamp = timestamp()
+  }
+
+  depends_on = [null_resource.docker_network]
 }
 
 # Create the Tempo configuration file
@@ -78,18 +83,6 @@ resource "docker_container" "tempo" {
     protocol = "tcp"
   }
 
-  ports {
-    internal = 4317
-    external = 4317
-    protocol = "tcp"
-  }
-
-  ports {
-    internal = 4318
-    external = 4318
-    protocol = "tcp"
-  }
-
   volumes {
     container_path = "/etc/tempo/config.yaml"
     host_path      = "${local.working_dir}/tempo/config/config.yaml"
@@ -99,12 +92,6 @@ resource "docker_container" "tempo" {
   volumes {
     container_path = "/tmp/tempo"
     host_path      = "${local.working_dir}/tempo/data"
-    read_only      = false
-  }
-
-  volumes {
-    container_path = "/tmp/tempo/wal"
-    host_path      = "${local.working_dir}/tempo/data/wal"
     read_only      = false
   }
 

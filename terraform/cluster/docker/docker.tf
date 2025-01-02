@@ -279,6 +279,8 @@ resource "null_resource" "setup_directories" {
       "mkdir -p ${local.working_dir}/promtail/config",
       "mkdir -p ${local.working_dir}/promtail/positions",
       "mkdir -p ${local.working_dir}/etc",
+      "mkdir -p ${local.working_dir}/otel",
+      "mkdir -p ${local.working_dir}/otel/config",
       "echo '# Custom configuration to prefer IPv6 over IPv4\nprecedence ::/0  100\nprecedence ::ffff:0:0/96  10' > ${local.working_dir}/etc/gai.conf",
       "chown -R ${local.grafana_user}:${local.grafana_user} ${local.working_dir}/grafana",  # Grafana user
       "chown -R 65534:65534 ${local.working_dir}/prometheus",  # nobody user
