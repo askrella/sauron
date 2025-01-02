@@ -136,7 +136,7 @@ resource "null_resource" "docker_setup" {
       terraform -chdir=./cluster/docker plan \
         -state=terraform.tfstate.${count.index} \
         -var-file=terraform.tfvars.${count.index} \
-        -parallelism=1 \
+        -parallelism=10 \
         -out=tfplan.${count.index}
       
       # Run apply and log
@@ -148,6 +148,7 @@ resource "null_resource" "docker_setup" {
         tfplan.${count.index}
     EOT
     # -parallelism=1 is a workaround for ssh connection issues: https://github.com/kreuzwerker/terraform-provider-docker/issues/262
+    # Setting a higher value makes this extremely unstable
   }
 
   triggers = {

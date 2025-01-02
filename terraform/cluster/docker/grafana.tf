@@ -66,7 +66,10 @@ resource "null_resource" "grafana_config_files" {
   }
 
   provisioner "file" {
-    content     = local.grafana_ini_content
+    content     = templatefile("${path.module}/grafana/config/grafana.ini", {
+      domain = var.domain
+      index = var.index
+    })
     destination = "${local.working_dir}/grafana/config/grafana.ini"
 
     connection {
@@ -168,7 +171,7 @@ resource "docker_container" "grafana" {
   
   env = [
     "GF_AUTH_BASIC_ENABLED=false",
-    "GF_SERVER_ROOT_URL=https://node-${var.index}.${var.domain}",
+    "GF_SERVER_ROOT_URL=http://grafana",
     "GF_AUTH_GOOGLE_ENABLED=${var.gf_auth_google_enabled}",
     "GF_AUTH_GOOGLE_NAME=${var.gf_auth_google_name}",
     "GF_AUTH_GOOGLE_CLIENT_ID=${var.gf_auth_google_client_id}",

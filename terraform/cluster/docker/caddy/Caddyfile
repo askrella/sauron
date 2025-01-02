@@ -1,19 +1,34 @@
 {
-    admin off
     acme_ca https://acme-v02.api.letsencrypt.org/directory
     auto_https disable_redirects
+
+    metrics /metrics
+
+    servers {
+		trace
+	}
 }
 
-node-${node_id}.${domain}:80 {
+http://node-${node_id}.${domain} {
     # Health check endpoint
     handle /api/health {
         respond "OK" 200
     }
 
+    @ws {
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+
     # Handle HTTP traffic
     handle {
+        tracing {
+			span grafana_http_handler
+		}
+
         reverse_proxy grafana-${node_id}:3000 {
             header_up Host {http.request.host}
+            header_up Origin {http.request.scheme}://{http.request.host}
             header_up X-Real-IP {http.request.remote}
         }
     }
@@ -25,24 +40,68 @@ node-${node_id}.${domain}:80 {
     }
 }
 
+(grafana_proxy) {
+    @ws {
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+
+    handle @ws {
+        tracing {
+			span grafana_ws_tls_handler
+		}
+
+        reverse_proxy grafana-${node_id}:3000 {
+            header_up Host {http.request.host}
+            header_up Origin {http.request.scheme}://{http.request.host}
+            header_up X-Real-IP {http.request.remote}
+            header_up Connection *Upgrade*
+            header_up Upgrade websocket
+        }
+
+        log_append grafana_headers_ws {http.request.headers}
+    }
+
+
+    handle {
+        tracing {
+			span grafana_http_tls_handler
+		}
+
+        reverse_proxy grafana-${node_id}:3000 {
+            # Grafana requires us to pass the Host header for CSRF protection
+            header_up Host {http.request.host}
+            header_up Origin {http.request.scheme}://{http.request.host}
+            header_up X-Real-IP {http.request.remote}
+
+            header_down X-Used-Host node-${node_id}.${domain}
+
+            header_down -Referer
+        }
+
+        log_append grafana_headers_http {http.request.headers}
+    }
+
+    log {
+        output stdout
+        format json
+        level DEBUG
+    }
+}
+
+# Allow direct (TLS) access to the Grafana API
 node-${node_id}.${domain} {
     tls {
         issuer acme
     }
 
     # Handle HTTPS traffic
-    handle {
-        reverse_proxy grafana-${node_id}:3000 {
-            header_up Host {http.request.host}
-            header_up X-Real-IP {http.request.remote}
-        }
-    }
+    import grafana_proxy
+}
 
-    log {
-        output stdout
-        format json
-        level INFO
-    }
+# Allow the Load Balancer to access the Grafana API without having to use a certificate
+${domain} {
+    import grafana_proxy
 }
 
 # OpenTelemetry HTTP endpoint

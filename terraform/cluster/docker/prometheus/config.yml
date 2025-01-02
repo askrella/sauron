@@ -56,3 +56,7 @@ scrape_configs:
     static_configs:
       - targets: ['otel-${index}:8889']
     metrics_path: /metrics
+
+  - job_name: 'caddy'
+    static_configs:
+      - targets: ['caddy-${index}:2019']

@@ -56,6 +56,10 @@ resource "cloudflare_load_balancer_pool" "pool" {
     for ip in var.ipv6_addresses : {
       name    = "node-${index(var.ipv6_addresses, ip)}"
       address = "node-${index(var.ipv6_addresses, ip)}.${var.domain}"
+      #header  = {
+      #  header = "Host"
+      #  values = ["node-${index(var.ipv6_addresses, ip)}.${var.domain}"]
+      #} # TODO: The Cloudflare provider currently seems to be buggy about this
       enabled = true
       weight  = 1
     }

@@ -35,6 +35,13 @@ resource "docker_container" "caddy" {
 
   restart = "unless-stopped"
 
+  env = [
+    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-${var.index}:4317",
+    "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://otel-${var.index}:4317",
+    "OTEL_EXPORTER_OTLP_INSECURE=true",
+    "OTEL_SERVICE_NAME=caddy-${var.index}"
+  ]
+
   ports {
     internal = 80
     external = 80
