@@ -45,7 +45,7 @@ resource "null_resource" "tempo_config" {
       access_key = var.minio_user
       secret_key = var.minio_password
       region     = var.minio_region
-      tempo_members = join("\n", [for node_ip in local.other_server_ips : "    - ${node_ip}:7946"])
+      tempo_members = join("\n", [for node_ip in local.other_server_ips : "    - ${node_ip}:7956"])
     })
     destination = "${local.working_dir}/tempo/config/config.yaml"
 
@@ -80,6 +80,24 @@ resource "docker_container" "tempo" {
   ports {
     internal = 3200
     external = var.tempo_port
+    protocol = "tcp"
+  }
+
+  ports {
+    internal = 7946
+    external = 7956
+    protocol = "tcp"
+  }
+
+  ports {
+    internal = 4417
+    external = 4417
+    protocol = "tcp"
+  }
+
+  ports {
+    internal = 4418
+    external = 4418
     protocol = "tcp"
   }
 

@@ -177,6 +177,36 @@ resource "hcloud_firewall" "cluster_firewall" {
     source_ips = [
       hcloud_network_subnet.subnet.ip_range
     ]
+  } 
+  
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    port      = "7956"
+    description = "Tempo gRPC"
+    source_ips = [
+      hcloud_network_subnet.subnet.ip_range
+    ]
+  }
+
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    port      = "4417"
+    description = "Tempo gRPC"
+    source_ips = [
+      hcloud_network_subnet.subnet.ip_range
+    ]
+  }
+
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    port      = "4418"
+    description = "Tempo gRPC"
+    source_ips = [
+      hcloud_network_subnet.subnet.ip_range
+    ]
   }
 
   # ==== Public Access ====

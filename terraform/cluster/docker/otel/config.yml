@@ -6,6 +6,11 @@ receivers:
       http:
         endpoint: "0.0.0.0:4318"
 
+extensions:
+  health_check:
+    endpoint: "0.0.0.0:4318"
+    path: "/health/status"
+
 processors:
   batch:
     timeout: 1s
@@ -21,7 +26,7 @@ exporters:
       enabled: true
 
   otlp/tempo:
-    endpoint: tempo-${index}:4317
+    endpoint: tempo-${index}:4417
     tls:
       insecure: true
 

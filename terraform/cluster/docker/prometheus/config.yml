@@ -6,6 +6,11 @@ global:
     node: ${node}
     node_ip: ${node_ip}
 
+tracing:
+  endpoint: "otel-${index}:4317"
+  insecure: true
+  sampling_fraction: 0.1
+
 scrape_configs:
   - job_name: 'cadvisor'
     static_configs:

@@ -77,7 +77,7 @@ resource "docker_container" "otel" {
   }
 
   healthcheck {
-    test         = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:13133"]
+    test         = ["CMD", "/bin/sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:4318/health/status"]
     interval     = "30s"
     timeout      = "10s"
     retries      = 3
