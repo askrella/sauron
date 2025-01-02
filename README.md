@@ -81,8 +81,16 @@ Before you begin deploying the Askrella Sauron cluster, ensure you have the foll
 
 - **Operating System**: A Unix-based system (Linux or macOS) is recommended for running the deployment scripts.
 - **Hetzner API Token**: Create an API token on Hetzner Cloud.
-- **Cloudflare API Token**: Create an API token on Cloudflare.
-- **Google OAuth Client ID and Secret**: Create OAuth credentials for secure authentication.
+- **Cloudflare API Token**: Create an API token on Cloudflare. The token needs to have the following permissions for the domain you want to use:
+    - **Zone DNS**: Read, Edit
+    - **Zone Settings**: Read, Edit
+    - **Zone Load Balancing**: Read, Edit
+    - **Health Checks**: Read, Edit
+    - **Origin Rules**: Read, Edit
+    - **Account: Load Balancing: Account LoadBalancing**: Read, Edit
+    - **Account: Load Balancing: Monitors And Pools**: Read, Edit
+- **Enabled Clouflare LoadBalancer**: Enable the LoadBalancer in the Cloudflare dashboard by going to your domain, clicking on "Traffic" and then "Load Balancing". If you don't do this, the script will fail with an interval validation error for the monitor (range [0,0]). See [Example Pricing](#example-pricing-) for more details.
+- **Google OAuth Client ID and Secret**: Create OAuth credentials for secure authentication. This may be set to internal use only.
 
 ## Software Requirements 🛠️
 
@@ -246,6 +254,11 @@ cd terraform && ssh -i terraform/id_ed25519 -o "StrictHostKeyChecking=no" -o "Us
 - Caddy TLS termination
 - Only re-deploy configs when content changes
 - Tests
+    - First-time deployment
+    - Re-deploy
+    - Adding nodes
+    - Removing nodes
+    - Upgrading from main to new version (checkout stable main and change to new version)
 - Encryption between nodes in internal network
 - Uptime monitoring using chromium based agent
 - Alerting

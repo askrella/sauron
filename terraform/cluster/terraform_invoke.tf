@@ -22,6 +22,11 @@ variable "server_ipv4_addresses" {
   }
 }
 
+variable "domain" {
+  type = string
+  description = "The domain name used for accessing the cluster: monitoring.example.com"
+}
+
 variable "cluster_size" {
   type = number
   description = "The size of the cluster"
@@ -92,6 +97,7 @@ resource "null_resource" "docker_setup" {
       cluster_ipv4_addresses = ${jsonencode(var.server_ipv4_addresses)}
       index = ${count.index}
       ssh_key_path = "${var.ssh_absolute_key_path}"
+      domain = "${var.domain}"
 
       # Grafana Configuration
       grafana_admin_password = "${var.grafana_admin_password}"

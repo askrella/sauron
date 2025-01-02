@@ -168,7 +168,7 @@ resource "docker_container" "grafana" {
   
   env = [
     "GF_AUTH_BASIC_ENABLED=false",
-    "GF_SERVER_ROOT_URL=${var.gf_server_root_url}",
+    "GF_SERVER_ROOT_URL=https://node-${var.index}.${var.domain}",
     "GF_AUTH_GOOGLE_ENABLED=${var.gf_auth_google_enabled}",
     "GF_AUTH_GOOGLE_NAME=${var.gf_auth_google_name}",
     "GF_AUTH_GOOGLE_CLIENT_ID=${var.gf_auth_google_client_id}",

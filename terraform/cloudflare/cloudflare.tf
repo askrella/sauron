@@ -1,6 +1,31 @@
+terraform {
+  required_providers {
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0.0-alpha1"
+    }
+  }
+}
+
+variable "cloudflare_api_token" {
+  type        = string
+  description = "The API token for the Cloudflare account"
+  sensitive   = true
+}
+
+variable "cloudflare_account_id" {
+  type        = string
+  description = "The account ID for the Cloudflare account"
+}
+
+variable "base_domain" {
+  type        = string
+  description = "The base domain name to create the load balancer for, example: example.com"
+}
+
 variable "domain" {
   type        = string
-  description = "The domain name to create the load balancer for"
+  description = "The domain name to create the load balancer for, example: monitoring.example.com"
 }
 
 variable "ipv6_addresses" {
@@ -12,54 +37,60 @@ variable "ipv6_addresses" {
 resource "cloudflare_load_balancer_monitor" "monitor" {
   description = "Health check for monitoring cluster nodes"
   type        = "http"
-  port        = 3000 # Grafana port
+  port        = 80
   method      = "GET"
   path        = "/api/health"
   expected_codes = "200"
-  interval    = 60
-  retries     = 2
-  timeout     = 5
+  interval       = 60
+  allow_insecure   = true # TODO: Remove this once we have TLS via Caddy
+
+  account_id = var.cloudflare_account_id
 }
 
 # Create pool of backend servers
 resource "cloudflare_load_balancer_pool" "pool" {
-  name = "monitoring-cluster-pool"
+  name    = "monitoring-cluster-pool"
   monitor = cloudflare_load_balancer_monitor.monitor.id
-  
-  dynamic "origins" {
-    for_each = var.ipv6_addresses
-    content {
-      name    = "node-${index(var.ipv6_addresses, origins.value)}"
-      address = "[${origins.value}]"
+
+  origins = [
+    for ip in var.ipv6_addresses : {
+      name    = "node-${index(var.ipv6_addresses, ip)}"
+      address = "node-${index(var.ipv6_addresses, ip)}.${var.domain}"
       enabled = true
       weight  = 1
     }
+  ]
+
+  account_id = var.cloudflare_account_id
+}
+
+
+# Get zone ID for domain
+data "cloudflare_zone" "domain" {
+  filter = {
+    name = var.base_domain
   }
 }
 
-# Get zone ID for domain
-data "cloudflare_zones" "domain" {
-  filter {
-    name = var.domain
-  }
+resource "cloudflare_dns_record" "monitoring_nodes" {
+  count   = length(var.ipv6_addresses)
+  zone_id = data.cloudflare_zone.domain.id
+  name    = "node-${count.index}.${var.domain}"
+  content   = var.ipv6_addresses[count.index]
+  type    = "AAAA"
+  proxied = false
+  ttl     = 60
 }
 
 # Create load balancer
 resource "cloudflare_load_balancer" "lb" {
-  zone_id          = data.cloudflare_zones.domain.zones[0].id
-  name             = "monitoring.${var.domain}"
-  fallback_pool_id = cloudflare_load_balancer_pool.pool.id
-  default_pool_id  = cloudflare_load_balancer_pool.pool.id
+  zone_id          = data.cloudflare_zone.domain.id
+  name             = "${var.domain}"
+  default_pools = [cloudflare_load_balancer_pool.pool.id]
+  fallback_pool = cloudflare_load_balancer_pool.pool.id
   enabled          = true
   proxied          = true
+  session_affinity = "cookie"
 
-  rules {
-    name = "default"
-    condition = "true"
-    fixed_response {
-      message_body = "Service Unavailable"
-      status_code  = 503
-      content_type = "text/plain"
-    }
-  }
+  depends_on       = [cloudflare_load_balancer_pool.pool]
 }

@@ -10,6 +10,10 @@ terraform {
       source = "aminueza/minio"
       version = "3.2.2"
     }
+    cloudflare = {
+      source = "cloudflare/cloudflare"
+      version = "5.0.0-alpha1"
+    }
   }
 }
 
@@ -20,6 +24,27 @@ variable "hcloud_token" {
 variable "cluster_size" {
   type = number
   default = 1
+}
+
+variable "domain" {
+  type = string
+  description = "The domain name to create the load balancer for, example: monitoring.example.com"
+}
+
+variable "base_domain" {
+  type = string
+  description = "The base domain name to create the load balancer for, example: example.com"
+}
+
+variable "cloudflare_api_token" {
+  type        = string
+  description = "The API token for the Cloudflare account"
+  sensitive   = true
+}
+
+variable "cloudflare_account_id" {
+  type        = string
+  description = "The account ID for the Cloudflare account"
 }
 
 variable "gf_server_root_url" {
@@ -97,6 +122,7 @@ module "cluster" {
   server_ipv4_addresses = module.server.server_ipv4_addresses
   ssh_absolute_key_path = "${abspath("./id_ed25519")}"
   cluster_size = var.cluster_size
+  domain = var.domain
 
   minio_bucket = var.minio_bucket
   minio_user = var.minio_user
@@ -111,4 +137,18 @@ module "cluster" {
   gf_auth_google_allowed_domains = var.gf_auth_google_allowed_domains
 
   depends_on = [module.server, minio_s3_bucket.bucket]
+}
+
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
+}
+
+module "cloudflare" {
+  source = "./cloudflare"
+  cloudflare_api_token = var.cloudflare_api_token
+  cloudflare_account_id = var.cloudflare_account_id
+  domain = var.domain
+  base_domain = var.base_domain
+  ipv6_addresses = module.server.server_ipv6_addresses
+  depends_on = [module.server]
 }

@@ -1,0 +1,82 @@
+{
+    admin off
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
+    auto_https disable_redirects
+}
+
+node-${node_id}.${domain}:80 {
+    # Health check endpoint
+    handle /api/health {
+        respond "OK" 200
+    }
+
+    # Handle HTTP traffic
+    handle {
+        reverse_proxy grafana-${node_id}:3000 {
+            header_up Host {http.request.host}
+            header_up X-Real-IP {http.request.remote}
+        }
+    }
+
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}
+
+node-${node_id}.${domain} {
+    tls {
+        issuer acme
+    }
+
+    # Handle HTTPS traffic
+    handle {
+        reverse_proxy grafana-${node_id}:3000 {
+            header_up Host {http.request.host}
+            header_up X-Real-IP {http.request.remote}
+        }
+    }
+
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}
+
+# OpenTelemetry HTTP endpoint
+node-${node_id}.${domain}:4318 {
+    tls {
+        issuer acme
+    }
+
+    reverse_proxy otel-${node_id}:4318 {
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote}
+    }
+
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}
+
+# OpenTelemetry gRPC endpoint
+node-${node_id}.${domain}:4317 {
+    tls {
+        issuer acme
+    }
+
+    reverse_proxy otel-${node_id}:4317 {
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote}
+    }
+
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}

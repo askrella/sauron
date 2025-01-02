@@ -223,14 +223,22 @@ resource "hcloud_firewall" "cluster_firewall" {
     ]
   }
 
-  # Grafana
   rule {
     direction = "in"
     protocol  = "tcp"
-    port      = "3000"
+    port      = "80"
     description = "Grafana"
     source_ips = [
-      "0.0.0.0/0",
+      "::/0"
+    ]
+  }
+  
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    port      = "443"
+    description = "Grafana"
+    source_ips = [
       "::/0"
     ]
   }
