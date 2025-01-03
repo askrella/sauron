@@ -11,7 +11,7 @@ resource "null_resource" "thanos_compactor_config" {
       index      = var.index
     })
     destination = "${local.working_dir}/thanos/compactor/config/compactor.yaml"
-    
+
     connection {
       type        = "ssh"
       user        = "root"
@@ -56,7 +56,7 @@ resource "docker_container" "thanos_compactor" {
 
   ports {
     internal = 10902
-    external = 10912  # Using different port to avoid conflicts
+    external = 10912 # Using different port to avoid conflicts
     protocol = "tcp"
   }
 
@@ -88,7 +88,7 @@ resource "docker_container" "thanos_compactor" {
     name = docker_network.wan.name
   }
 
-  user = "65534"  # nobody user
+  user = "65534" # nobody user
 
   log_opts = {
     max-size = "10m"
@@ -100,9 +100,9 @@ resource "docker_container" "thanos_compactor" {
   ]
 
   dns = [
-    "fedc::1", # Docker DNS
+    "fedc::1",              # Docker DNS
     "2606:4700:4700::1111", # Cloudflare DNS
-    "2606:4700:4700::1001" # Cloudflare DNS fallback
+    "2606:4700:4700::1001"  # Cloudflare DNS fallback
   ]
 
   depends_on = [

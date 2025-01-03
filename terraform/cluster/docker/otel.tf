@@ -1,13 +1,13 @@
 variable "otel_version" {
-  type    = string
-  default = "0.116.1"
+  type        = string
+  default     = "0.116.1"
   description = "The version of OpenTelemetry Collector to use"
 }
 
 # Create the OpenTelemetry configuration file
 resource "null_resource" "otel_config" {
   provisioner "file" {
-    content     = templatefile("${path.module}/otel/config.yml", {
+    content = templatefile("${path.module}/otel/config.yml", {
       index = var.index
     })
     destination = "${local.working_dir}/otel/config/config.yml"
@@ -28,7 +28,7 @@ resource "null_resource" "otel_config" {
 }
 
 resource "docker_image" "otel" {
-  name = "otel/opentelemetry-collector-contrib:${var.otel_version}"
+  name         = "otel/opentelemetry-collector-contrib:${var.otel_version}"
   keep_locally = true
 
   depends_on = [null_resource.docker_network]

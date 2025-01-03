@@ -14,7 +14,7 @@ variable "grafana_logout_redirect_url" {
   description = "URL to redirect to after logout"
   type        = string
   default     = ""
-} 
+}
 
 # Create the datasources configuration file
 resource "null_resource" "grafana_datasources" {
@@ -66,9 +66,9 @@ resource "null_resource" "grafana_config_files" {
   }
 
   provisioner "file" {
-    content     = templatefile("${path.module}/grafana/config/grafana.ini", {
+    content = templatefile("${path.module}/grafana/config/grafana.ini", {
       domain = var.domain
-      index = var.index
+      index  = var.index
     })
     destination = "${local.working_dir}/grafana/config/grafana.ini"
 
@@ -82,23 +82,23 @@ resource "null_resource" "grafana_config_files" {
 
   triggers = {
     grafana_ini_content = local.grafana_ini_content
-    timestamp = timestamp()
+    timestamp           = timestamp()
   }
 
   depends_on = [null_resource.setup_directories]
 }
 
 resource "docker_image" "grafana" {
-  name = "grafana/grafana:${var.grafana_version}"
+  name          = "grafana/grafana:${var.grafana_version}"
   pull_triggers = [var.grafana_version]
-  platform = "linux/arm64"
-  keep_locally = true
+  platform      = "linux/arm64"
+  keep_locally  = true
 
   depends_on = [null_resource.docker_network]
 }
 
 resource "docker_container" "grafana" {
-  name = "grafana-${var.index}"
+  name  = "grafana-${var.index}"
   image = docker_image.grafana.image_id
 
   restart = "unless-stopped"
@@ -107,7 +107,7 @@ resource "docker_container" "grafana" {
     internal = 3000
     external = var.grafana_port
     protocol = "tcp"
-    ip = "::"
+    ip       = "::"
   }
 
   volumes {
@@ -121,7 +121,7 @@ resource "docker_container" "grafana" {
     host_path      = "${local.working_dir}/grafana/config/grafana.ini"
     read_only      = true
   }
-  
+
   volumes {
     container_path = "/etc/grafana/provisioning/alerting"
     host_path      = "${local.working_dir}/grafana/config/provisioning/alerting"
@@ -164,11 +164,11 @@ resource "docker_container" "grafana" {
   user = local.grafana_user
 
   dns = [
-    "fedc::1", # Docker DNS
+    "fedc::1",              # Docker DNS
     "2606:4700:4700::1111", # Cloudflare DNS
-    "2606:4700:4700::1001" # Cloudflare DNS fallback
+    "2606:4700:4700::1001"  # Cloudflare DNS fallback
   ]
-  
+
   env = [
     "GF_AUTH_BASIC_ENABLED=false",
     "GF_SERVER_ROOT_URL=http://grafana",
@@ -187,22 +187,22 @@ resource "docker_container" "grafana" {
     "GF_SECURITY_ADMIN_USER=${var.grafana_admin_user}",
     "GF_SECURITY_ADMIN_PASSWORD=${var.grafana_admin_password}",
     "GF_AUTH_LOGOUT_REDIRECT_URL=${var.grafana_logout_redirect_url}",
-    
+
     # Provisioning data sources
     "GF_INSTALL_PLUGINS=https://storage.googleapis.com/integration-artifacts/grafana-exploretraces-app/grafana-exploretraces-app-latest.zip;grafana-traces-app",
     "GF_PATHS_PROVISIONING=/etc/grafana/provisioning",
     "GF_DATASOURCES_PATH=/etc/grafana/provisioning/datasources"
   ]
 
-  memory    = 700  // MB
-  memory_swap = 1024  // MB
-  cpu_shares = 512
+  memory      = 700  // MB
+  memory_swap = 1024 // MB
+  cpu_shares  = 512
 
   healthcheck {
-    test = ["CMD", "wget", "--spider", "http://localhost:3000"]
-    interval = "30s"
-    timeout  = "10s"
-    retries  = 3
+    test         = ["CMD", "wget", "--spider", "http://localhost:3000"]
+    interval     = "30s"
+    timeout      = "10s"
+    retries      = 3
     start_period = "30s"
   }
 }
@@ -211,7 +211,7 @@ resource "docker_container" "grafana" {
 resource "null_resource" "grafana_dashboards" {
 
   provisioner "file" {
-    content = <<-EOT
+    content     = <<-EOT
 apiVersion: 1
 providers:
   - name: 'default'
@@ -271,7 +271,7 @@ providers:
   }
 
   provisioner "file" {
-    content     = templatefile("${path.module}/grafana/config/dashboards/askrella-loki.json", {
+    content = templatefile("${path.module}/grafana/config/dashboards/askrella-loki.json", {
       required_loki_nodes = local.node_count >= 3 ? 3 : local.node_count
     })
     destination = "${local.working_dir}/grafana/config/dashboards/askrella-loki.json"

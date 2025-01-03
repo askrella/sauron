@@ -22,13 +22,13 @@ locals {
 # Create the Loki configuration file
 resource "null_resource" "loki_config" {
   provisioner "file" {
-    content     = templatefile("${path.module}/loki/config.yaml", {
-      loki_members = join("\n", [for node_ip in local.other_server_ips : "    - ${node_ip}:7946"])
-      bucket_access_key = var.minio_user
+    content = templatefile("${path.module}/loki/config.yaml", {
+      loki_members         = join("\n", [for node_ip in local.other_server_ips : "    - ${node_ip}:7946"])
+      bucket_access_key    = var.minio_user
       bucket_access_secret = var.minio_password
-      bucket_endpoint = local.minio_endpoint
-      bucket_name = var.minio_bucket
-      bucket_region = var.minio_region
+      bucket_endpoint      = local.minio_endpoint
+      bucket_name          = var.minio_bucket
+      bucket_region        = var.minio_region
 
       replication_factor = local.node_count >= 3 ? 3 : 1
     })
@@ -50,7 +50,7 @@ resource "null_resource" "loki_config" {
 }
 
 resource "docker_image" "loki" {
-  name = "grafana/loki:${var.loki_version}"
+  name         = "grafana/loki:${var.loki_version}"
   keep_locally = true
 
   depends_on = [null_resource.docker_network]
@@ -115,18 +115,18 @@ resource "docker_container" "loki" {
   ]
 
   dns = [
-    "fedc::1", # Docker DNS
+    "fedc::1",              # Docker DNS
     "2606:4700:4700::1111", # Cloudflare DNS
-    "2606:4700:4700::1001" # Cloudflare DNS fallback
+    "2606:4700:4700::1001"  # Cloudflare DNS fallback
   ]
 
   user = "10001"
 
   healthcheck {
-    test = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
-    interval = "30s"
-    timeout  = "10s"
-    retries  = 3
+    test         = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+    interval     = "30s"
+    timeout      = "10s"
+    retries      = 3
     start_period = "30s"
   }
 }

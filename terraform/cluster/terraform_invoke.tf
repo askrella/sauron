@@ -1,5 +1,5 @@
 variable "server_ipv6_addresses" {
-  type = list(string)
+  type        = list(string)
   description = "List of IPv6 addresses of the servers"
 
   validation {
@@ -11,7 +11,7 @@ variable "server_ipv6_addresses" {
 }
 
 variable "server_ipv4_addresses" {
-  type = list(string)
+  type        = list(string)
   description = "List of IPv4 addresses of the servers"
 
   validation {
@@ -23,65 +23,65 @@ variable "server_ipv4_addresses" {
 }
 
 variable "domain" {
-  type = string
+  type        = string
   description = "The domain name used for accessing the cluster: monitoring.example.com"
 }
 
 variable "cluster_size" {
-  type = number
+  type        = number
   description = "The size of the cluster"
 }
-  
+
 variable "ssh_absolute_key_path" {
-  type = string
+  type        = string
   description = "The absolutepath to the SSH key to use for the Docker provider"
 }
 
 variable "gf_server_root_url" {
-  type = string
+  type        = string
   description = "The root URL for Grafana"
 }
 
 variable "gf_auth_google_client_id" {
-  type = string
+  type        = string
   description = "Google OAuth client ID"
 }
 
 variable "gf_auth_google_client_secret" {
-  type = string
+  type        = string
   description = "Google OAuth client secret"
-  sensitive = true
+  sensitive   = true
 }
 
 variable "gf_auth_google_allowed_domains" {
-  type = string
+  type        = string
   description = "Allowed domains for Google OAuth"
 }
 
 variable "grafana_admin_password" {
-  type = string
+  type        = string
   description = "Password for the Grafana admin user"
-  sensitive = true
+  sensitive   = true
 }
 
 variable "minio_bucket" {
-  type = string
+  type        = string
   description = "The MinIO bucket name"
 }
 
 variable "minio_user" {
-  type = string
+  type        = string
   description = "The MinIO user"
 }
 
 variable "minio_password" {
-  type = string
+  type        = string
   description = "The MinIO password"
-  sensitive = true
+  sensitive   = true
 }
 
 variable "minio_region" {
-  type = string
+  type        = string
   description = "The MinIO region"
 }
 

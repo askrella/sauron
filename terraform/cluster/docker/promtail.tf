@@ -44,7 +44,7 @@ resource "null_resource" "promtail_config" {
 }
 
 resource "docker_image" "promtail" {
-  name = "grafana/promtail:${var.promtail_version}"
+  name         = "grafana/promtail:${var.promtail_version}"
   keep_locally = true
 
 
@@ -90,7 +90,7 @@ resource "docker_container" "promtail" {
   }
 
   command = [
-   "--config.file=/etc/promtail/config.yaml"
+    "--config.file=/etc/promtail/config.yaml"
   ]
 
   networks_advanced {
@@ -103,10 +103,10 @@ resource "docker_container" "promtail" {
   ]
 
   healthcheck {
-    test = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9080/ready || exit 1"]
-    interval = "30s"
-    timeout  = "10s"
-    retries  = 3
+    test         = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9080/ready || exit 1"]
+    interval     = "30s"
+    timeout      = "10s"
+    retries      = 3
     start_period = "30s"
   }
 }

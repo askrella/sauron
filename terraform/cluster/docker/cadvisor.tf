@@ -1,5 +1,5 @@
 resource "docker_image" "cadvisor" {
-  name = "gcr.io/cadvisor/cadvisor:${var.cadvisor_version}"
+  name         = "gcr.io/cadvisor/cadvisor:${var.cadvisor_version}"
   keep_locally = true
 
   depends_on = [null_resource.docker_network]

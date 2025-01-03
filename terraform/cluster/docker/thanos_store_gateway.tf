@@ -91,7 +91,7 @@ resource "docker_container" "thanos_store" {
     name = docker_network.wan.name
   }
 
-  user = "65534"  # nobody user
+  user = "65534" # nobody user
 
   log_opts = {
     max-size = "10m"

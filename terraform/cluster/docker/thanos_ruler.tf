@@ -95,7 +95,7 @@ resource "docker_container" "thanos_ruler" {
     name = docker_network.wan.name
   }
 
-  user = "65534"  # nobody user
+  user = "65534" # nobody user
 
   log_opts = {
     max-size = "10m"
@@ -107,9 +107,9 @@ resource "docker_container" "thanos_ruler" {
   ]
 
   dns = [
-    "fedc::1", # Docker DNS
+    "fedc::1",              # Docker DNS
     "2606:4700:4700::1111", # Cloudflare DNS
-    "2606:4700:4700::1001" # Cloudflare DNS fallback
+    "2606:4700:4700::1001"  # Cloudflare DNS fallback
   ]
 
   depends_on = [

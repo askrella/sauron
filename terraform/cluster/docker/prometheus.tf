@@ -30,7 +30,7 @@ resource "null_resource" "prometheus_config" {
 }
 
 resource "docker_image" "prometheus" {
-  name = "prom/prometheus:${var.prometheus_version}"
+  name         = "prom/prometheus:${var.prometheus_version}"
   keep_locally = true
 
   depends_on = [
@@ -73,10 +73,10 @@ resource "docker_container" "prometheus" {
   ]
 
   healthcheck {
-    test = ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
-    interval = "30s"
-    timeout = "10s"
-    retries = 3
+    test         = ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
+    interval     = "30s"
+    timeout      = "10s"
+    retries      = 3
     start_period = "30s"
   }
 
@@ -84,7 +84,7 @@ resource "docker_container" "prometheus" {
     name = docker_network.monitoring.name
   }
 
-  user = "65534"  # nobody user
+  user = "65534" # nobody user
 
   log_opts = {
     max-size = "10m"

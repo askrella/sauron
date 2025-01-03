@@ -17,11 +17,11 @@ resource "docker_container" "thanos_querier" {
     "query",
     "--http-address=0.0.0.0:10904",
     "--grpc-address=0.0.0.0:10903",
-    "--store=thanos-sidecar-${var.index}:10901",  # Connect to sidecar
-    "--store=thanos-store-${var.index}:10905"     # Connect to store gateway
-  ],
-  # Add store endpoints for other nodes in cluster
-  [for ip in local.other_server_ips : "--store=[${ip}]:10901"]
+    "--store=thanos-sidecar-${var.index}:10901", # Connect to sidecar
+    "--store=thanos-store-${var.index}:10905"    # Connect to store gateway
+    ],
+    # Add store endpoints for other nodes in cluster
+    [for ip in local.other_server_ips : "--store=[${ip}]:10901"]
   )
 
   ports {
@@ -52,7 +52,7 @@ resource "docker_container" "thanos_querier" {
     name = docker_network.wan.name
   }
 
-  user = "65534"  # nobody user
+  user = "65534" # nobody user
 
   log_opts = {
     max-size = "10m"

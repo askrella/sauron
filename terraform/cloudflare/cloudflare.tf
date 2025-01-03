@@ -35,14 +35,14 @@ variable "ipv6_addresses" {
 
 # Create monitor to check health of backends
 resource "cloudflare_load_balancer_monitor" "monitor" {
-  description = "Health check for monitoring cluster nodes"
-  type        = "http"
-  port        = 80
-  method      = "GET"
-  path        = "/api/health"
+  description    = "Health check for monitoring cluster nodes"
+  type           = "http"
+  port           = 80
+  method         = "GET"
+  path           = "/api/health"
   expected_codes = "200"
   interval       = 60
-  allow_insecure   = true # TODO: Remove this once we have TLS via Caddy
+  allow_insecure = true # TODO: Remove this once we have TLS via Caddy
 
   account_id = var.cloudflare_account_id
 }
@@ -80,7 +80,7 @@ resource "cloudflare_dns_record" "monitoring_nodes" {
   count   = length(var.ipv6_addresses)
   zone_id = data.cloudflare_zone.domain.id
   name    = "node-${count.index}.${var.domain}"
-  content   = var.ipv6_addresses[count.index]
+  content = var.ipv6_addresses[count.index]
   type    = "AAAA"
   proxied = false
   ttl     = 60
@@ -89,12 +89,12 @@ resource "cloudflare_dns_record" "monitoring_nodes" {
 # Create load balancer
 resource "cloudflare_load_balancer" "lb" {
   zone_id          = data.cloudflare_zone.domain.id
-  name             = "${var.domain}"
-  default_pools = [cloudflare_load_balancer_pool.pool.id]
-  fallback_pool = cloudflare_load_balancer_pool.pool.id
+  name             = var.domain
+  default_pools    = [cloudflare_load_balancer_pool.pool.id]
+  fallback_pool    = cloudflare_load_balancer_pool.pool.id
   enabled          = true
   proxied          = true
   session_affinity = "cookie"
 
-  depends_on       = [cloudflare_load_balancer_pool.pool]
+  depends_on = [cloudflare_load_balancer_pool.pool]
 }

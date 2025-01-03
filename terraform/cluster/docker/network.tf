@@ -1,8 +1,8 @@
 
 resource "docker_network" "monitoring" {
-  name = "monitoring"
+  name     = "monitoring"
   internal = true
-  ipv6 = true
+  ipv6     = true
 }
 
 resource "docker_network" "wan" {

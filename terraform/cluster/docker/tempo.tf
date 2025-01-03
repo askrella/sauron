@@ -1,12 +1,12 @@
 variable "tempo_version" {
-  type    = string
-  default = "2.6.1"
+  type        = string
+  default     = "2.6.1"
   description = "The version of Tempo to use"
 }
 
 variable "tempo_port" {
-  type    = number
-  default = 3200
+  type        = number
+  default     = 3200
   description = "The port to expose Tempo on"
 }
 
@@ -40,11 +40,11 @@ resource "null_resource" "tempo_config_dirs" {
 resource "null_resource" "tempo_config" {
   provisioner "file" {
     content = templatefile("${path.module}/tempo/config.yaml", {
-      bucket     = var.minio_bucket
-      endpoint   = local.minio_endpoint
-      access_key = var.minio_user
-      secret_key = var.minio_password
-      region     = var.minio_region
+      bucket        = var.minio_bucket
+      endpoint      = local.minio_endpoint
+      access_key    = var.minio_user
+      secret_key    = var.minio_password
+      region        = var.minio_region
       tempo_members = join("\n", [for node_ip in local.other_server_ips : "    - ${node_ip}:7956"])
     })
     destination = "${local.working_dir}/tempo/config/config.yaml"

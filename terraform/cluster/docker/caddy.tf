@@ -8,7 +8,7 @@ resource "docker_image" "caddy" {
 # Create the Caddy configuration file
 resource "null_resource" "caddy_config" {
   provisioner "file" {
-    content     = templatefile("${path.module}/caddy/Caddyfile", {
+    content = templatefile("${path.module}/caddy/Caddyfile", {
       domain  = var.domain
       node_id = var.index
     })

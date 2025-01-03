@@ -1,5 +1,5 @@
 resource "docker_image" "thanos" {
-  name = "quay.io/thanos/thanos:v0.37.2"
+  name         = "quay.io/thanos/thanos:v0.37.2"
   keep_locally = true
 
   depends_on = [
@@ -18,8 +18,8 @@ resource "null_resource" "thanos_sidecar_config" {
 
   provisioner "file" {
     content = templatefile("${path.module}/thanos/sidecar.yaml", {
-      bucket = var.minio_bucket
-      endpoint = local.minio_endpoint
+      bucket     = var.minio_bucket
+      endpoint   = local.minio_endpoint
       access_key = var.minio_user
       secret_key = var.minio_password
       region     = var.minio_region
@@ -83,10 +83,10 @@ resource "docker_container" "thanos_sidecar" {
   }
 
   healthcheck {
-    test = ["CMD", "wget", "--spider", "http://localhost:10902/-/healthy"]
-    interval = "30s"
-    timeout  = "10s"
-    retries  = 3
+    test         = ["CMD", "wget", "--spider", "http://localhost:10902/-/healthy"]
+    interval     = "30s"
+    timeout      = "10s"
+    retries      = 3
     start_period = "30s"
   }
 
@@ -98,7 +98,7 @@ resource "docker_container" "thanos_sidecar" {
     name = docker_network.wan.name
   }
 
-  user = "65534"  # nobody user
+  user = "65534" # nobody user
 
   log_opts = {
     max-size = "10m"
