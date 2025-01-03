@@ -21,6 +21,7 @@ jobs:
       - name: Remove S3 backend from Terraform
         run: sed -i '/backend \"s3\" { /,/}/d' terraform.tf
         working-directory: ./terraform
+        continue-on-error: true
 
       - name: (Terraform) Initialize
         run: terraform init -input=false
