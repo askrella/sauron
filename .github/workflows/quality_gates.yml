@@ -18,6 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.3"
+
       - name: Remove S3 backend from Terraform
         run: sed -i '/backend \"s3\" { /,/}/d' terraform.tf
         working-directory: ./terraform
