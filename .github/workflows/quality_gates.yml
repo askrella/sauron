@@ -1,0 +1,77 @@
+name: Quality Gates
+
+on:
+  - push
+  - workflow_call
+
+jobs:
+  quality_gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    needs: [terraform_qg, checkov, terrascan, tfsec]
+    steps:
+      - uses: actions/checkout@v4
+
+  terraform_qg:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Remove S3 backend from Terraform
+        run: sed -i '/backend \"s3\" { /,/}/d' terraform.tf
+        working-directory: ./terraform
+
+      - name: (Terraform) Initialize
+        run: terraform init -input=false
+        working-directory: ./terraform
+
+      - name: Terraform Format (Ignored)
+        run: terraform fmt -check -recursive -diff
+        working-directory: ./terraform
+
+      - name: Terraform Validate
+        id: tf-validate
+        run: terraform validate
+        working-directory: ./terraform
+
+  checkov:
+    name: Checkov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: (Checkov) Run checks...
+        uses: bridgecrewio/checkov-action@v12.2875.0 # Verified vendor
+        id: checkov
+        with:
+          quiet: true
+          soft_fail: true
+
+  terrascan:
+    name: Terrascan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: (Terrascan) Run checks...
+        id: terrascan
+        uses: tenable/terrascan-action@v1.5.0 # No release since Oct 27, 2021 (last commit July 7th 2022, actively maintained)
+        with:
+          iac_type: terraform
+          only_warn: true
+          sarif_upload: true
+
+  tfsec:
+    name: TFSec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: (TFSec) Run checks...
+        id: tfsec
+        uses: aquasecurity/tfsec-sarif-action@v0.1.4 # Verified vendor
+        with:
+          #sarif_file: tfsec.sarif
+          full_repo_scan: true
+          format: lovely
