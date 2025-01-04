@@ -296,7 +296,6 @@ cd terraform && ssh -i terraform/id_ed25519 -o "StrictHostKeyChecking=no" -o "Us
 - Encryption between nodes in internal network
 - Uptime monitoring using chromium based agent
 - Alerting
-- OpenTelemetry support
 - Grafana shared database
 - OnCall integration
 
