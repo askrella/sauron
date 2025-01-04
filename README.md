@@ -1,7 +1,7 @@
 # Askrella Sauron 🚀 👁️
 _Production ready monitoring cluster based on Grafana Stack, Hetzner and Cloudflare._
 
-[![Pipeline Status](https://github.com/askrella/sauron/actions/workflows/main.yml/badge.svg)](https://github.com/askrella/sauron/actions)
+[![Pipeline Status](https://github.com/askrella/sauron/actions/workflows/main.yml/badge.svg)](https://github.com/askrella/sauron/actions/workflows/quality_gates.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Production Ready](https://img.shields.io/badge/Production-Ready-brightgreen.svg)](https://github.com/askrella/sauron)
 [![Latest Release](https://img.shields.io/github/v/release/askrella/sauron?include_prereleases)](https://github.com/askrella/sauron/releases)
@@ -114,7 +114,36 @@ To deploy the cluster, follow these steps:
    cd sauron
    ```
 
-2. **Configure Terraform Variables**: Update the `terraform.tfvars` file with your Hetzner API token and other necessary variables.
+2. **Configure Terraform Variables**: Update the `terraform.tfvars` file according to this structure:
+
+```hcl
+hcloud_token = ""
+
+minio_bucket   = "sauron-bucket"
+minio_user     = "your-user"
+minio_password = "your-password"
+minio_region   = "nbg1"
+
+# We recommend to start with 3 nodes and scale up if you need more.
+# Having less nodes will work, but limit the failover and scaling capabilities of your cluster.
+cluster_size = 3
+
+base_domain = "example.com"
+domain      = "monitoring.example.com"
+
+otel_collector_username = "otel"
+# Make sure to escape the BCrypt hashed password
+otel_collector_password = "$${2y}$$10$$PJfizyuW5JdSVlLHsRq8O.tMxrqOcpR0jtz0PXo5u3fRA8Ue.YL.C"
+
+cloudflare_api_token  = ""
+cloudflare_account_id = ""
+
+grafana_admin_password         = ""
+gf_server_root_url             = "https://grafana.example.com"
+gf_auth_google_client_id       = "your-id.apps.googleusercontent.com"
+gf_auth_google_client_secret   = "your-secret"
+gf_auth_google_allowed_domains = "example.com"
+```
 
 3. **Initialize Terraform**:
    ```bash
@@ -250,8 +279,6 @@ cd terraform && ssh -i terraform/id_ed25519 -o "StrictHostKeyChecking=no" -o "Us
 
 ## TODO 📝
 
-- Cloudflare LoadBalancer & DNS
-- Caddy TLS termination
 - Only re-deploy configs when content changes
 - Tests
     - First-time deployment

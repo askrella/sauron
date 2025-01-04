@@ -17,81 +17,12 @@ terraform {
   }
 }
 
-variable "hcloud_token" {
-  sensitive = true
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
 }
 
-variable "cluster_size" {
-  type    = number
-  default = 1
-}
-
-variable "domain" {
-  type        = string
-  description = "The domain name to create the load balancer for, example: monitoring.example.com"
-}
-
-variable "base_domain" {
-  type        = string
-  description = "The base domain name to create the load balancer for, example: example.com"
-}
-
-variable "cloudflare_api_token" {
-  type        = string
-  description = "The API token for the Cloudflare account"
-  sensitive   = true
-}
-
-variable "cloudflare_account_id" {
-  type        = string
-  description = "The account ID for the Cloudflare account"
-}
-
-variable "gf_server_root_url" {
-  type        = string
-  description = "The root URL for Grafana"
-}
-
-variable "gf_auth_google_client_id" {
-  type        = string
-  description = "Google OAuth client ID"
-}
-
-variable "gf_auth_google_client_secret" {
-  type        = string
-  description = "Google OAuth client secret"
-  sensitive   = true
-}
-
-variable "gf_auth_google_allowed_domains" {
-  type        = string
-  description = "Allowed domains for Google OAuth"
-}
-
-# Configure the Hetzner Cloud Provider
 provider "hcloud" {
   token = var.hcloud_token
-}
-
-variable "minio_user" {
-  type        = string
-  description = "The MinIO user"
-}
-
-variable "minio_password" {
-  type        = string
-  description = "The MinIO password"
-  sensitive   = true
-}
-
-variable "minio_bucket" {
-  type        = string
-  description = "The MinIO bucket name"
-}
-
-variable "minio_region" {
-  type        = string
-  description = "The MinIO region"
 }
 
 provider "minio" {
@@ -100,12 +31,6 @@ provider "minio" {
   minio_password = var.minio_password
   minio_region   = var.minio_region
   minio_ssl      = true
-}
-
-resource "minio_s3_bucket" "bucket" {
-  bucket         = var.minio_bucket
-  acl            = "private"
-  object_locking = false
 }
 
 module "server" {
@@ -131,16 +56,15 @@ module "cluster" {
 
   grafana_admin_password = var.grafana_admin_password
 
+  otel_collector_username = var.otel_collector_username
+  otel_collector_password = var.otel_collector_password
+
   gf_server_root_url             = var.gf_server_root_url
   gf_auth_google_client_id       = var.gf_auth_google_client_id
   gf_auth_google_client_secret   = var.gf_auth_google_client_secret
   gf_auth_google_allowed_domains = var.gf_auth_google_allowed_domains
 
   depends_on = [module.server, minio_s3_bucket.bucket]
-}
-
-provider "cloudflare" {
-  api_token = var.cloudflare_api_token
 }
 
 module "cloudflare" {

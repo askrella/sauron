@@ -254,6 +254,27 @@ resource "hcloud_firewall" "cluster_firewall" {
     ]
   }
 
+  rule {
+    direction   = "in"
+    protocol    = "tcp"
+    port        = "2053"
+    description = "OTel Collector HTTP"
+    source_ips = [
+      "::/0"
+    ]
+  }
+
+
+  rule {
+    direction   = "in"
+    protocol    = "tcp"
+    port        = "2083"
+    description = "OTel Collector gRPC"
+    source_ips = [
+      "::/0"
+    ]
+  }
+
   labels = local.labels
 }
 

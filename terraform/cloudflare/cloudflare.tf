@@ -47,7 +47,6 @@ resource "cloudflare_load_balancer_monitor" "monitor" {
   account_id = var.cloudflare_account_id
 }
 
-# Create pool of backend servers
 resource "cloudflare_load_balancer_pool" "pool" {
   name    = "monitoring-cluster-pool"
   monitor = cloudflare_load_balancer_monitor.monitor.id

@@ -7,6 +7,12 @@
     servers {
 		trace
 	}
+
+    log {
+        output stdout
+        format json
+        level INFO
+    }
 }
 
 http://node-${node_id}.${domain} {
@@ -32,12 +38,6 @@ http://node-${node_id}.${domain} {
             header_up X-Real-IP {http.request.remote}
         }
     }
-
-    log {
-        output stdout
-        format json
-        level INFO
-    }
 }
 
 (grafana_proxy) {
@@ -58,34 +58,27 @@ http://node-${node_id}.${domain} {
             header_up Connection *Upgrade*
             header_up Upgrade websocket
         }
-
-        log_append grafana_headers_ws {http.request.headers}
     }
-
 
     handle {
         tracing {
 			span grafana_http_tls_handler
 		}
 
+        encode {
+            gzip
+            zstd
+            minimum_length 1024
+        }
+
         reverse_proxy grafana-${node_id}:3000 {
             # Grafana requires us to pass the Host header for CSRF protection
             header_up Host {http.request.host}
             header_up Origin {http.request.scheme}://{http.request.host}
             header_up X-Real-IP {http.request.remote}
-
             header_down X-Used-Host node-${node_id}.${domain}
-
             header_down -Referer
         }
-
-        log_append grafana_headers_http {http.request.headers}
-    }
-
-    log {
-        output stdout
-        format json
-        level DEBUG
     }
 }
 
@@ -101,41 +94,73 @@ node-${node_id}.${domain} {
 
 # Allow the Load Balancer to access the Grafana API without having to use a certificate
 ${domain} {
-    import grafana_proxy
+    @standard_ports {
+        expression {http.request.port} in [80, 443]
+    }
+
+    handle @standard_ports {
+        import grafana_proxy
+    }
+
+    @otel_http {
+        expression {http.request.port} == 2053
+    }
+
+    @otel_grpc {
+        expression {http.request.port} == 2083
+    }
+
+    handle @otel_http {
+        basic_auth * bcrypt {
+            ${otel_collector_username} ${otel_collector_password}
+        }
+
+        reverse_proxy otel-${node_id}:4318 {
+            header_up Host {http.request.host}
+            header_up X-Real-IP {http.request.remote}
+        }
+    }
+
+    handle @otel_grpc {
+        basic_auth * bcrypt {
+            ${otel_collector_username} ${otel_collector_password}
+        }
+
+        reverse_proxy otel-${node_id}:4317 {
+            header_up Host {http.request.host}
+            header_up X-Real-IP {http.request.remote}
+        }
+    }
 }
 
-# OpenTelemetry HTTP endpoint
-node-${node_id}.${domain}:4318 {
+# Allow direct (TLS) access to OpenTelemetry HTTP endpoint
+node-${node_id}.${domain}:2053 {
     tls {
         issuer acme
+    }
+
+    basic_auth * bcrypt {
+        ${otel_collector_username} ${otel_collector_password}
     }
 
     reverse_proxy otel-${node_id}:4318 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote}
     }
-
-    log {
-        output stdout
-        format json
-        level INFO
-    }
 }
 
-# OpenTelemetry gRPC endpoint
-node-${node_id}.${domain}:4317 {
+# Allow direct (TLS) access to OpenTelemetry gRPC endpoint
+node-${node_id}.${domain}:2083 {
     tls {
         issuer acme
+    }
+
+    basic_auth * bcrypt {
+        ${otel_collector_username} ${otel_collector_password}
     }
 
     reverse_proxy otel-${node_id}:4317 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote}
-    }
-
-    log {
-        output stdout
-        format json
-        level INFO
     }
 }

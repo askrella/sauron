@@ -50,6 +50,17 @@ variable "ssh_key_path" {
   description = "The path to the SSH key to use for the Docker provider"
 }
 
+variable "otel_collector_username" {
+  description = "The username for the OTel collector"
+  type        = string
+}
+
+variable "otel_collector_password" {
+  description = "The bcrypt hashed password for the OTel collector"
+  type        = string
+  sensitive   = true
+}
+
 variable "minio_bucket" {
   type        = string
   description = "The MinIO bucket name"

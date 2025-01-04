@@ -22,6 +22,17 @@ variable "server_ipv4_addresses" {
   }
 }
 
+variable "otel_collector_username" {
+  description = "The username for the OTel collector"
+  type        = string
+}
+
+variable "otel_collector_password" {
+  description = "The bcrypt hashed password for the OTel collector"
+  type        = string
+  sensitive   = true
+}
+
 variable "domain" {
   type        = string
   description = "The domain name used for accessing the cluster: monitoring.example.com"
@@ -85,42 +96,45 @@ variable "minio_region" {
   description = "The MinIO region"
 }
 
+resource "local_file" "tfvars" {
+  count    = var.cluster_size
+  filename = "${path.module}/docker/terraform.tfvars.${count.index}"
+  content  = <<-EOT
+    server_ipv6_address = "${var.server_ipv6_addresses[count.index]}"
+    cluster_ipv6_addresses = ${jsonencode(var.server_ipv6_addresses)}
+    cluster_ipv4_addresses = ${jsonencode(var.server_ipv4_addresses)}
+    index = ${count.index}
+    ssh_key_path = "${var.ssh_absolute_key_path}"
+    domain = "${var.domain}"
+
+    otel_collector_username = "${var.otel_collector_username}"
+    otel_collector_password = "${replace(replace(var.otel_collector_password, "$$", "$"), "$", "$$")}"
+    
+    # Grafana Configuration
+    grafana_admin_password = "${var.grafana_admin_password}"
+    
+    # Grafana OAuth Configuration
+    gf_server_root_url = "${var.gf_server_root_url}"
+    gf_auth_google_enabled = "true"
+    gf_auth_google_name = "Google"
+    gf_auth_google_client_id = "${var.gf_auth_google_client_id}"
+    gf_auth_google_client_secret = "${var.gf_auth_google_client_secret}"
+    gf_auth_google_scopes = "openid email profile"
+    gf_auth_google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth"
+    gf_auth_google_token_url = "https://oauth2.googleapis.com/token"
+    gf_auth_google_api_url = "https://openidconnect.googleapis.com/v1/userinfo"
+    gf_auth_google_allowed_domains = "${var.gf_auth_google_allowed_domains}"
+    gf_auth_google_allow_sign_up = "true"
+
+    minio_bucket = "${var.minio_bucket}"
+    minio_user = "${var.minio_user}"
+    minio_password = "${var.minio_password}"
+    minio_region = "${var.minio_region}"
+  EOT
+}
+
 resource "null_resource" "docker_setup" {
   count = var.cluster_size
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      # Create tfvars file for this instance
-      cat > ./cluster/docker/terraform.tfvars.${count.index} <<EOF
-      server_ipv6_address = "${var.server_ipv6_addresses[count.index]}"
-      cluster_ipv6_addresses = ${jsonencode(var.server_ipv6_addresses)}
-      cluster_ipv4_addresses = ${jsonencode(var.server_ipv4_addresses)}
-      index = ${count.index}
-      ssh_key_path = "${var.ssh_absolute_key_path}"
-      domain = "${var.domain}"
-
-      # Grafana Configuration
-      grafana_admin_password = "${var.grafana_admin_password}"
-      
-      # Grafana OAuth Configuration
-      gf_server_root_url = "${var.gf_server_root_url}"
-      gf_auth_google_enabled = "true"
-      gf_auth_google_name = "Google"
-      gf_auth_google_client_id = "${var.gf_auth_google_client_id}"
-      gf_auth_google_client_secret = "${var.gf_auth_google_client_secret}"
-      gf_auth_google_scopes = "openid email profile"
-      gf_auth_google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth"
-      gf_auth_google_token_url = "https://oauth2.googleapis.com/token"
-      gf_auth_google_api_url = "https://openidconnect.googleapis.com/v1/userinfo"
-      gf_auth_google_allowed_domains = "${var.gf_auth_google_allowed_domains}"
-      gf_auth_google_allow_sign_up = "true"
-      minio_bucket = "${var.minio_bucket}"
-      minio_user = "${var.minio_user}"
-      minio_password = "${var.minio_password}"
-      minio_region = "${var.minio_region}"
-      EOF
-    EOT
-  }
 
   provisioner "local-exec" {
     command = <<-EOT

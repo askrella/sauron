@@ -11,6 +11,8 @@ resource "null_resource" "caddy_config" {
     content = templatefile("${path.module}/caddy/Caddyfile", {
       domain  = var.domain
       node_id = var.index
+      otel_collector_username = var.otel_collector_username
+      otel_collector_password = replace(var.otel_collector_password, "$$", "$")
     })
     destination = "${local.working_dir}/caddy/Caddyfile"
 
@@ -57,15 +59,15 @@ resource "docker_container" "caddy" {
   }
 
   ports {
-    internal = 4317
-    external = 4317
+    internal = 2053
+    external = 2053
     protocol = "tcp"
     ip       = "::"
   }
 
   ports {
-    internal = 4318
-    external = 4318
+    internal = 2083
+    external = 2083
     protocol = "tcp"
     ip       = "::"
   }
