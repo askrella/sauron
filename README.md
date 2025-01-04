@@ -287,7 +287,6 @@ cd terraform && ssh -i terraform/id_ed25519 -o "StrictHostKeyChecking=no" -o "Us
 
 ## TODO 📝
 
-- Only re-deploy configs when content changes
 - Tests
     - First-time deployment
     - Re-deploy
@@ -308,6 +307,8 @@ cd terraform && ssh -i terraform/id_ed25519 -o "StrictHostKeyChecking=no" -o "Us
     - we don't utilize the scaling effects of scaling each component separately of one another,
     - we cannot scale infinitely since we are limited by the overhead of all the "monolithic" nodes communicating with all other nodes.
     - **However**: The load is distributed since each Prometheus instance only manages a portion of recent metrics. This allows us to scale horizontally up to a reasonable number of instances and gain performance increases inversely proportional to the number of instances while maintaining high availability. Additionally, Thanos provides long-term storage and querying capabilities for historical metrics spanning multiple years. We can also tolerate peaks better than a single instance of e.g. Prometheus, since the data ingestion is distributed across multiple nodes.
+
+- We are affected by https://github.com/kreuzwerker/terraform-provider-docker/issues/648 which is a known issue with the docker provider leading to re-deployment of all containers when networks_advanced is used. This behavior unfortunately also leads to downtime of the cluster.
 
 ## Contributing 🤝
 
