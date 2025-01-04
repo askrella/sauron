@@ -100,4 +100,9 @@ resource "docker_container" "prometheus" {
     null_resource.prometheus_config,
     null_resource.setup_directories
   ]
+
+  lifecycle {
+    # Fix for re-deployment due to network_mode change
+    ignore_changes = [network_mode]
+  }
 }

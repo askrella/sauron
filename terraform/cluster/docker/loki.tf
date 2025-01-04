@@ -129,4 +129,9 @@ resource "docker_container" "loki" {
     retries      = 3
     start_period = "30s"
   }
+
+  lifecycle {
+    # Fix for re-deployment due to network_mode change
+    ignore_changes = [network_mode]
+  }
 }

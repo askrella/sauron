@@ -205,88 +205,10 @@ resource "docker_container" "grafana" {
     retries      = 3
     start_period = "30s"
   }
+
+  lifecycle {
+    # Fix for re-deployment due to network_mode change
+    ignore_changes = [network_mode]
+  }
 }
 
-# Add after grafana_config_dirs resource
-resource "null_resource" "grafana_dashboards" {
-
-  provisioner "file" {
-    content     = <<-EOT
-apiVersion: 1
-providers:
-  - name: 'default'
-    orgId: 1
-    folder: ''
-    type: file
-    disableDeletion: false
-    editable: false
-    updateIntervalSeconds: 10
-    options:
-      path: /etc/grafana/provisioning/dashboards
-    EOT
-    destination = "${local.working_dir}/grafana/config/dashboards/dashboards.yaml"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/grafana/config/dashboards/cAdvisor.json"
-    destination = "${local.working_dir}/grafana/config/dashboards/cAdvisor.json"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/grafana/config/dashboards/node-exporter.json"
-    destination = "${local.working_dir}/grafana/config/dashboards/node-exporter.json"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/grafana/config/dashboards/thanos.json"
-    destination = "${local.working_dir}/grafana/config/dashboards/thanos.json"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  provisioner "file" {
-    content = templatefile("${path.module}/grafana/config/dashboards/askrella-loki.json", {
-      required_loki_nodes = local.node_count >= 3 ? 3 : local.node_count
-    })
-    destination = "${local.working_dir}/grafana/config/dashboards/askrella-loki.json"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.setup_directories]
-}

@@ -143,4 +143,9 @@ resource "docker_container" "tempo" {
     null_resource.docker_network,
     null_resource.tempo_config
   ]
+
+  lifecycle {
+    # Fix for re-deployment due to network_mode change
+    ignore_changes = [network_mode]
+  }
 } 

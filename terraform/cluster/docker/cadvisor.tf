@@ -52,4 +52,9 @@ resource "docker_container" "cadvisor" {
   }
 
   depends_on = [null_resource.docker_network]
+
+  lifecycle {
+    # Fix for re-deployment due to network_mode change
+    ignore_changes = [network_mode]
+  }
 }

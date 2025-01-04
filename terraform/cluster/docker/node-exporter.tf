@@ -48,4 +48,9 @@ resource "docker_container" "node_exporter" {
   networks_advanced {
     name = docker_network.monitoring.name
   }
+
+  lifecycle {
+    # Fix for re-deployment due to network_mode change
+    ignore_changes = [network_mode]
+  }
 }

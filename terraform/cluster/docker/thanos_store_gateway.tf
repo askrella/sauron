@@ -107,4 +107,9 @@ resource "docker_container" "thanos_store" {
     null_resource.setup_directories,
     null_resource.thanos_store_gateway_config
   ]
+
+  lifecycle {
+    # Fix for re-deployment due to network_mode change
+    ignore_changes = [network_mode]
+  }
 }

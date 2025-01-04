@@ -116,4 +116,9 @@ resource "docker_container" "thanos_ruler" {
     docker_container.thanos_querier,
     null_resource.thanos_ruler_config
   ]
+
+  lifecycle {
+    # Fix for re-deployment due to network_mode change
+    ignore_changes = [network_mode]
+  }
 }

@@ -114,4 +114,9 @@ resource "docker_container" "thanos_sidecar" {
     null_resource.setup_directories,
     null_resource.thanos_sidecar_config
   ]
+
+  lifecycle {
+    # Fix for re-deployment due to network_mode change
+    ignore_changes = [network_mode]
+  }
 }

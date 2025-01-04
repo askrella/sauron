@@ -67,4 +67,9 @@ resource "docker_container" "thanos_querier" {
     docker_container.thanos_sidecar,
     docker_container.thanos_store
   ]
+
+  lifecycle {
+    # Fix for re-deployment due to network_mode change
+    ignore_changes = [network_mode]
+  }
 }
