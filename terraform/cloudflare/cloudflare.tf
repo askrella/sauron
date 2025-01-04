@@ -2,7 +2,7 @@ terraform {
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 5.0.0-alpha1"
+      version = ">= 4.49.1"
     }
   }
 }
@@ -51,31 +51,29 @@ resource "cloudflare_load_balancer_pool" "pool" {
   name    = "monitoring-cluster-pool"
   monitor = cloudflare_load_balancer_monitor.monitor.id
 
-  origins = [
-    for ip in var.ipv6_addresses : {
-      name    = "node-${index(var.ipv6_addresses, ip)}"
-      address = "node-${index(var.ipv6_addresses, ip)}.${var.domain}"
-      #header  = {
-      #  header = "Host"
-      #  values = ["node-${index(var.ipv6_addresses, ip)}.${var.domain}"]
-      #} # TODO: The Cloudflare provider currently seems to be buggy about this
+  dynamic "origins" {
+    for_each = { for i, addr in var.ipv6_addresses : i => addr }
+    content {
+      name    = "node-${origins.key}"
+      address = "node-${origins.key}.${var.domain}"
+      header {
+        header = "Host"
+        values = ["node-${origins.key}.${var.domain}"]
+      }
       enabled = true
       weight  = 1
     }
-  ]
+  }
 
   account_id = var.cloudflare_account_id
 }
 
-
 # Get zone ID for domain
 data "cloudflare_zone" "domain" {
-  filter = {
-    name = var.base_domain
-  }
+  name = var.base_domain
 }
 
-resource "cloudflare_dns_record" "monitoring_nodes" {
+resource "cloudflare_record" "monitoring_nodes" {
   count   = length(var.ipv6_addresses)
   zone_id = data.cloudflare_zone.domain.id
   name    = "node-${count.index}.${var.domain}"
@@ -89,8 +87,8 @@ resource "cloudflare_dns_record" "monitoring_nodes" {
 resource "cloudflare_load_balancer" "lb" {
   zone_id          = data.cloudflare_zone.domain.id
   name             = var.domain
-  default_pools    = [cloudflare_load_balancer_pool.pool.id]
-  fallback_pool    = cloudflare_load_balancer_pool.pool.id
+  default_pool_ids    = [cloudflare_load_balancer_pool.pool.id]
+  fallback_pool_id    = cloudflare_load_balancer_pool.pool.id
   enabled          = true
   proxied          = true
   session_affinity = "cookie"

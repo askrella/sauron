@@ -158,6 +158,14 @@ gf_auth_google_allowed_domains = "example.com"
 
 5. **Verify Deployment**: Ensure all services are running and accessible via the configured DNS records.
 
+   5.1 Connect to Grafana and login with the credentials you provided in the `terraform.tfvars` file. Check the dashboards and logs to make sure everything is working.
+
+   5.2 Connect to the OTel Collector and login with the credentials you provided in the `terraform.tfvars` file. You can connect your application to the OTel Collector by using the following configuration:
+   ```yaml
+   endpoint http: http://example.com:2053 (basic auth with the credentials you provided in the `terraform.tfvars` file)
+   endpoint grpc: http://example.com:2083 (basic auth with the credentials you provided in the `terraform.tfvars` file)
+   ```
+
 ### Persistent Storage of Terraform State
 
 Please keep in mind to persist the terraform state files contained in the `terraform/cluster` and `terraform` directories.
