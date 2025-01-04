@@ -151,6 +151,7 @@ resource "null_resource" "docker_setup" {
         -state=terraform.tfstate.${count.index} \
         -var-file=terraform.tfvars.${count.index} \
         -parallelism=10 \
+        -no-color \
         -out=tfplan.${count.index}
       
       # Run apply and log
@@ -159,6 +160,7 @@ resource "null_resource" "docker_setup" {
         -state=terraform.tfstate.${count.index} \
         -var-file=terraform.tfvars.${count.index} \
         -parallelism=1 \
+        -no-color \
         tfplan.${count.index}
     EOT
     # -parallelism=1 is a workaround for ssh connection issues: https://github.com/kreuzwerker/terraform-provider-docker/issues/262
