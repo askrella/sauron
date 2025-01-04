@@ -1,52 +1,5 @@
-# Create required directories
-resource "null_resource" "loki_config_dirs" {
-  provisioner "remote-exec" {
-    inline = [
-      "mkdir -p ${local.working_dir}/loki/config",
-      "mkdir -p ${local.working_dir}/loki/data"
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-}
-
 locals {
   node_count = length(var.cluster_ipv4_addresses)
-}
-
-# Create the Loki configuration file
-resource "null_resource" "loki_config" {
-  provisioner "file" {
-    content = templatefile("${path.module}/loki/config.yaml", {
-      loki_members         = join("\n", [for node_ip in local.other_server_ips : "    - ${node_ip}:7946"])
-      bucket_access_key    = var.minio_user
-      bucket_access_secret = var.minio_password
-      bucket_endpoint      = local.minio_endpoint
-      bucket_name          = var.minio_bucket
-      bucket_region        = var.minio_region
-
-      replication_factor = local.node_count >= 3 ? 3 : 1
-    })
-    destination = "${local.working_dir}/loki/config/config.yaml"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.setup_directories]
 }
 
 resource "docker_image" "loki" {
@@ -82,13 +35,13 @@ resource "docker_container" "loki" {
 
   volumes {
     container_path = "/etc/loki/config.yaml"
-    host_path      = "${local.working_dir}/loki/config/config.yaml"
+    host_path      = local.loki_config_file_path
     read_only      = true
   }
 
   volumes {
     container_path = "/loki"
-    host_path      = "${local.working_dir}/loki/data"
+    host_path      = local.loki_data_dir
   }
 
   volumes {
@@ -111,7 +64,7 @@ resource "docker_container" "loki" {
 
   depends_on = [
     null_resource.data_collectors_up,
-    null_resource.loki_config
+    null_resource.loki_configs
   ]
 
   dns = [

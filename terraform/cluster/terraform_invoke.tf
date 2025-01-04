@@ -142,26 +142,26 @@ resource "null_resource" "docker_setup" {
       export TF_LOG=INFO
       
       # Run init and log
-      export TF_LOG_PATH="terraform_init.${count.index}.log"
-      terraform -chdir=./cluster/docker init
-      
+      TF_LOG_PATH="terraform_init.${count.index}.log" \
+        terraform -chdir=./cluster/docker init
+
       # Run plan and log
-      export TF_LOG_PATH="terraform_plan.${count.index}.log"
-      terraform -chdir=./cluster/docker plan \
-        -state=terraform.tfstate.${count.index} \
-        -var-file=terraform.tfvars.${count.index} \
-        -parallelism=10 \
-        -no-color \
-        -out=tfplan.${count.index}
+      TF_LOG_PATH="terraform_plan.${count.index}.log" \
+        terraform -chdir=./cluster/docker plan \
+          -state=terraform.tfstate.${count.index} \
+          -var-file=terraform.tfvars.${count.index} \
+          -parallelism=10 \
+          -no-color \
+          -out=tfplan.${count.index}
       
       # Run apply and log
-      export TF_LOG_PATH="terraform_apply.${count.index}.log"
-      terraform -chdir=./cluster/docker apply -auto-approve \
-        -state=terraform.tfstate.${count.index} \
-        -var-file=terraform.tfvars.${count.index} \
-        -parallelism=1 \
-        -no-color \
-        tfplan.${count.index}
+      TF_LOG_PATH="terraform_apply.${count.index}.log" \
+        terraform -chdir=./cluster/docker apply -auto-approve \
+          -state=terraform.tfstate.${count.index} \
+          -var-file=terraform.tfvars.${count.index} \
+          -parallelism=1 \
+          -no-color \
+          tfplan.${count.index}
     EOT
     # -parallelism=1 is a workaround for ssh connection issues: https://github.com/kreuzwerker/terraform-provider-docker/issues/262
     # Setting a higher value makes this extremely unstable

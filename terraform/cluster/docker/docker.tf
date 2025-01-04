@@ -315,9 +315,4 @@ resource "null_resource" "setup_directories" {
       private_key = file(var.ssh_key_path)
     }
   }
-
-  triggers = {
-    always_run = timestamp()
-  }
 }
-

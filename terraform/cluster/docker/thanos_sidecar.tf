@@ -1,40 +1,3 @@
-resource "docker_image" "thanos" {
-  name         = "quay.io/thanos/thanos:v0.37.2"
-  keep_locally = true
-
-  depends_on = [
-    null_resource.docker_network
-  ]
-}
-
-# Create Thanos sidecar configuration
-resource "null_resource" "thanos_sidecar_config" {
-  connection {
-    type        = "ssh"
-    user        = "root"
-    host        = var.server_ipv6_address
-    private_key = file(var.ssh_key_path)
-  }
-
-  provisioner "file" {
-    content = templatefile("${path.module}/thanos/sidecar.yaml", {
-      bucket     = var.minio_bucket
-      endpoint   = local.minio_endpoint
-      access_key = var.minio_user
-      secret_key = var.minio_password
-      region     = var.minio_region
-      index      = var.index
-    })
-    destination = "${local.working_dir}/thanos/sidecar/config/sidecar.yaml"
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.setup_directories]
-}
-
 locals {
   thanos_sidecar_label = "thanos-sidecar-${var.index}"
 }
@@ -72,13 +35,13 @@ resource "docker_container" "thanos_sidecar" {
 
   volumes {
     container_path = "/etc/thanos/sidecar.yaml"
-    host_path      = "${local.working_dir}/thanos/sidecar/config/sidecar.yaml"
+    host_path      = local.thanos_sidecar_config_file_path
     read_only      = true
   }
 
   volumes {
     container_path = "/prometheus"
-    host_path      = "${local.working_dir}/prometheus/data"
+    host_path      = local.thanos_sidecar_data_dir
     read_only      = false
   }
 
@@ -112,7 +75,7 @@ resource "docker_container" "thanos_sidecar" {
   depends_on = [
     docker_container.prometheus,
     null_resource.setup_directories,
-    null_resource.thanos_sidecar_config
+    null_resource.thanos_sidecar_configs
   ]
 
   lifecycle {

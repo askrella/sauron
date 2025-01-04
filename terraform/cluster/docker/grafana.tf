@@ -16,78 +16,6 @@ variable "grafana_logout_redirect_url" {
   default     = ""
 }
 
-# Create the datasources configuration file
-resource "null_resource" "grafana_datasources" {
-  provisioner "file" {
-    content = templatefile("${path.module}/grafana/config/provisioning/datasources/datasources.yaml", {
-      bucket     = var.minio_bucket
-      endpoint   = "${var.minio_region}.your-objectstorage.com"
-      access_key = var.minio_user
-      secret_key = var.minio_password
-      region     = var.minio_region
-      index      = var.index
-    })
-    destination = "${local.working_dir}/grafana/config/provisioning/datasources/datasources.yaml"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.setup_directories]
-}
-
-locals {
-  # Content not already covered by the environment variables
-  grafana_ini_content = <<-EOT
-EOT
-}
-
-# Add this resource after the grafana_config_dirs resource
-resource "null_resource" "grafana_config_files" {
-  provisioner "remote-exec" {
-    inline = [
-      "rm -rf ${local.working_dir}/grafana/config/grafana.ini",
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  provisioner "file" {
-    content = templatefile("${path.module}/grafana/config/grafana.ini", {
-      domain = var.domain
-      index  = var.index
-    })
-    destination = "${local.working_dir}/grafana/config/grafana.ini"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    grafana_ini_content = local.grafana_ini_content
-    timestamp           = timestamp()
-  }
-
-  depends_on = [null_resource.setup_directories]
-}
-
 resource "docker_image" "grafana" {
   name          = "grafana/grafana:${var.grafana_version}"
   pull_triggers = [var.grafana_version]
@@ -118,7 +46,7 @@ resource "docker_container" "grafana" {
 
   volumes {
     container_path = "/etc/grafana/grafana.ini"
-    host_path      = "${local.working_dir}/grafana/config/grafana.ini"
+    host_path      = local.grafana_ini_path
     read_only      = true
   }
 
@@ -130,19 +58,13 @@ resource "docker_container" "grafana" {
 
   volumes {
     container_path = "/etc/grafana/provisioning/datasources"
-    host_path      = "${local.working_dir}/grafana/config/provisioning/datasources"
+    host_path      = local.grafana_datasources_path_dir
     read_only      = true
   }
 
   volumes {
     container_path = "/etc/grafana/provisioning/dashboards"
-    host_path      = "${local.working_dir}/grafana/config/dashboards"
-    read_only      = true
-  }
-
-  volumes {
-    container_path = "${local.working_dir}/grafana/config/dashboards/dashboards.yaml"
-    host_path      = "${local.working_dir}/grafana/config/dashboards/dashboards.yaml"
+    host_path      = local.grafana_dashboards_path_dir
     read_only      = true
   }
 
@@ -156,9 +78,7 @@ resource "docker_container" "grafana" {
 
   depends_on = [
     null_resource.databases_up,
-    null_resource.grafana_datasources,
-    null_resource.grafana_config_files,
-    null_resource.grafana_dashboards
+    null_resource.grafana_configs
   ]
 
   user = local.grafana_user

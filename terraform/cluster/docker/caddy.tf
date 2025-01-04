@@ -5,32 +5,6 @@ resource "docker_image" "caddy" {
   depends_on = [null_resource.docker_network]
 }
 
-# Create the Caddy configuration file
-resource "null_resource" "caddy_config" {
-  provisioner "file" {
-    content = templatefile("${path.module}/caddy/Caddyfile", {
-      domain  = var.domain
-      node_id = var.index
-      otel_collector_username = var.otel_collector_username
-      otel_collector_password = replace(var.otel_collector_password, "$$", "$")
-    })
-    destination = "${local.working_dir}/caddy/Caddyfile"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.setup_directories]
-}
-
 resource "docker_container" "caddy" {
   name  = "caddy-${var.index}"
   image = docker_image.caddy.image_id
@@ -74,7 +48,7 @@ resource "docker_container" "caddy" {
 
   volumes {
     container_path = "/etc/caddy/Caddyfile"
-    host_path      = "${local.working_dir}/caddy/Caddyfile"
+    host_path      = local.caddyfile_path
     read_only      = true
   }
 

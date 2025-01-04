@@ -1,32 +1,3 @@
-# Create Thanos Ruler configuration
-resource "null_resource" "thanos_ruler_config" {
-
-  provisioner "file" {
-    content = templatefile("${path.module}/thanos/ruler.yaml", {
-      bucket     = var.minio_bucket
-      endpoint   = "${var.minio_region}.your-objectstorage.com"
-      access_key = var.minio_user
-      secret_key = var.minio_password
-      region     = var.minio_region
-      index      = var.index
-    })
-    destination = "${local.working_dir}/thanos/ruler/config/ruler.yaml"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.setup_directories]
-}
-
 locals {
   thanos_ruler_label = "thanos-ruler-${var.index}"
 }
@@ -69,13 +40,13 @@ resource "docker_container" "thanos_ruler" {
 
   volumes {
     container_path = "/etc/thanos/ruler.yaml"
-    host_path      = "${local.working_dir}/thanos/ruler/config/ruler.yaml"
+    host_path      = local.thanos_ruler_config_file_path
     read_only      = true
   }
 
   volumes {
     container_path = "/data"
-    host_path      = "${local.working_dir}/thanos/ruler/data"
+    host_path      = local.thanos_ruler_data_dir
     read_only      = false
   }
 
@@ -114,7 +85,7 @@ resource "docker_container" "thanos_ruler" {
 
   depends_on = [
     docker_container.thanos_querier,
-    null_resource.thanos_ruler_config
+    null_resource.thanos_ruler_configs
   ]
 
   lifecycle {

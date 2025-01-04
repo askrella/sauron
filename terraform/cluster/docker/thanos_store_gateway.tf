@@ -1,33 +1,3 @@
-# Create Thanos Store Gateway configuration
-resource "null_resource" "thanos_store_gateway_config" {
-
-
-  provisioner "file" {
-    content = templatefile("${path.module}/thanos/store.yaml", {
-      bucket     = var.minio_bucket
-      endpoint   = "${var.minio_region}.your-objectstorage.com"
-      access_key = var.minio_user
-      secret_key = var.minio_password
-      region     = var.minio_region
-      index      = var.index
-    })
-    destination = "${local.working_dir}/thanos/store/config/store.yaml"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.setup_directories]
-}
-
 locals {
   thanos_store_gateway_label = "thanos-store-${var.index}"
 }
@@ -65,13 +35,13 @@ resource "docker_container" "thanos_store" {
 
   volumes {
     container_path = "/etc/thanos/store.yaml"
-    host_path      = "${local.working_dir}/thanos/store/config/store.yaml"
+    host_path      = local.thanos_store_gateway_config_file_path
     read_only      = true
   }
 
   volumes {
     container_path = "/data"
-    host_path      = "${local.working_dir}/thanos/store/data"
+    host_path      = local.thanos_store_gateway_data_dir
     read_only      = false
   }
 
@@ -105,7 +75,7 @@ resource "docker_container" "thanos_store" {
   depends_on = [
     docker_image.thanos,
     null_resource.setup_directories,
-    null_resource.thanos_store_gateway_config
+    null_resource.thanos_store_gateway_configs
   ]
 
   lifecycle {

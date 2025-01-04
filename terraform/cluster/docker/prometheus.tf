@@ -1,34 +1,3 @@
-# Create the Prometheus configuration file
-resource "null_resource" "prometheus_config" {
-  provisioner "file" {
-    content = templatefile("${path.module}/prometheus/config.yml", {
-      bucket     = var.minio_bucket
-      endpoint   = "${var.minio_region}.your-objectstorage.com"
-      access_key = var.minio_user
-      secret_key = var.minio_password
-      region     = var.minio_region
-      index      = var.index
-      cluster    = "sauron"
-      node       = var.index
-      node_ip    = var.server_ipv6_address
-    })
-    destination = "${local.working_dir}/prometheus/config/prometheus.yml"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.setup_directories]
-}
-
 resource "docker_image" "prometheus" {
   name         = "prom/prometheus:${var.prometheus_version}"
   keep_locally = true
@@ -52,13 +21,13 @@ resource "docker_container" "prometheus" {
 
   volumes {
     container_path = "/etc/prometheus"
-    host_path      = "${local.working_dir}/prometheus/config"
+    host_path      = local.prometheus_config_path_dir
     read_only      = false
   }
 
   volumes {
     container_path = "/prometheus"
-    host_path      = "${local.working_dir}/prometheus/data"
+    host_path      = local.prometheus_data_dir
   }
 
   command = [
@@ -97,7 +66,7 @@ resource "docker_container" "prometheus" {
 
   depends_on = [
     null_resource.data_collectors_up,
-    null_resource.prometheus_config,
+    null_resource.prometheus_configs,
     null_resource.setup_directories
   ]
 

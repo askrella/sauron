@@ -4,29 +4,6 @@ variable "otel_version" {
   description = "The version of OpenTelemetry Collector to use"
 }
 
-# Create the OpenTelemetry configuration file
-resource "null_resource" "otel_config" {
-  provisioner "file" {
-    content = templatefile("${path.module}/otel/config.yml", {
-      index = var.index
-    })
-    destination = "${local.working_dir}/otel/config/config.yml"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.setup_directories]
-}
-
 resource "docker_image" "otel" {
   name         = "otel/opentelemetry-collector-contrib:${var.otel_version}"
   keep_locally = true
@@ -60,7 +37,7 @@ resource "docker_container" "otel" {
 
   volumes {
     container_path = "/etc/otelcol/config.yml"
-    host_path      = "${local.working_dir}/otel/config/config.yml"
+    host_path      = local.otel_config_file_path
     read_only      = true
   }
 
@@ -86,7 +63,7 @@ resource "docker_container" "otel" {
 
   depends_on = [
     null_resource.docker_network,
-    null_resource.otel_config,
+    null_resource.otel_configs,
     docker_container.tempo
   ]
 

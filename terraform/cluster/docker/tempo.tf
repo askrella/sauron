@@ -10,60 +10,6 @@ variable "tempo_port" {
   description = "The port to expose Tempo on"
 }
 
-# Create required directories
-resource "null_resource" "tempo_config_dirs" {
-  provisioner "remote-exec" {
-    inline = [
-      "mkdir -p ${local.working_dir}/tempo",
-      "mkdir -p ${local.working_dir}/tempo/config",
-      "mkdir -p ${local.working_dir}/tempo/data",
-      "mkdir -p ${local.working_dir}/tempo/data/wal",
-      "chown -R 65534:65534 ${local.working_dir}/tempo"
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.docker_network]
-}
-
-# Create the Tempo configuration file
-resource "null_resource" "tempo_config" {
-  provisioner "file" {
-    content = templatefile("${path.module}/tempo/config.yaml", {
-      bucket        = var.minio_bucket
-      endpoint      = local.minio_endpoint
-      access_key    = var.minio_user
-      secret_key    = var.minio_password
-      region        = var.minio_region
-      tempo_members = join("\n", [for node_ip in local.other_server_ips : "    - ${node_ip}:7956"])
-    })
-    destination = "${local.working_dir}/tempo/config/config.yaml"
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    timestamp = timestamp()
-  }
-
-  depends_on = [null_resource.tempo_config_dirs]
-}
-
 resource "docker_image" "tempo" {
   name         = "grafana/tempo:${var.tempo_version}"
   keep_locally = true
@@ -103,13 +49,13 @@ resource "docker_container" "tempo" {
 
   volumes {
     container_path = "/etc/tempo/config.yaml"
-    host_path      = "${local.working_dir}/tempo/config/config.yaml"
+    host_path      = local.tempo_config_file_path
     read_only      = true
   }
 
   volumes {
     container_path = "/tmp/tempo"
-    host_path      = "${local.working_dir}/tempo/data"
+    host_path      = local.tempo_data_dir
     read_only      = false
   }
 
@@ -141,11 +87,11 @@ resource "docker_container" "tempo" {
 
   depends_on = [
     null_resource.docker_network,
-    null_resource.tempo_config
+    null_resource.tempo_configs
   ]
 
   lifecycle {
     # Fix for re-deployment due to network_mode change
     ignore_changes = [network_mode]
   }
-} 
+}
