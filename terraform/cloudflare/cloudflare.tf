@@ -42,7 +42,6 @@ resource "cloudflare_load_balancer_monitor" "monitor" {
   path           = "/api/health"
   expected_codes = "200"
   interval       = 60
-  allow_insecure = true # TODO: Remove this once we have TLS via Caddy
 
   account_id = var.cloudflare_account_id
 }
