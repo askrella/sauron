@@ -102,31 +102,31 @@ ${domain} {
         import grafana_proxy
     }
 
-    @otel_http {
+    @alloy_http {
         expression {http.request.port} == 2053
     }
 
-    @otel_grpc {
+    @alloy_grpc {
         expression {http.request.port} == 2083
     }
 
-    handle @otel_http {
+    handle @alloy_http {
         basic_auth * bcrypt {
             ${otel_collector_username} ${otel_collector_password}
         }
 
-        reverse_proxy otel-${node_id}:4318 {
+        reverse_proxy alloy-${node_id}:4318 {
             header_up Host {http.request.host}
             header_up X-Real-IP {http.request.remote}
         }
     }
 
-    handle @otel_grpc {
+    handle @alloy_grpc {
         basic_auth * bcrypt {
             ${otel_collector_username} ${otel_collector_password}
         }
 
-        reverse_proxy otel-${node_id}:4317 {
+        reverse_proxy alloy-${node_id}:4317 {
             header_up Host {http.request.host}
             header_up X-Real-IP {http.request.remote}
         }
@@ -143,7 +143,7 @@ node-${node_id}.${domain}:2053 {
         ${otel_collector_username} ${otel_collector_password}
     }
 
-    reverse_proxy otel-${node_id}:4318 {
+    reverse_proxy alloy-${node_id}:4318 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote}
     }
@@ -159,7 +159,7 @@ node-${node_id}.${domain}:2083 {
         ${otel_collector_username} ${otel_collector_password}
     }
 
-    reverse_proxy otel-${node_id}:4317 {
+    reverse_proxy alloy-${node_id}:4317 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote}
     }

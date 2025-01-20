@@ -269,11 +269,7 @@ resource "docker_image" "hello_world" {
 locals {
   grafana_user        = "472"
   grafana_plugins_dir = "${local.working_dir}/grafana/config/plugins"
-}
-
-resource "null_resource" "setup_directories" {
-  provisioner "remote-exec" {
-    inline = [
+  setup_directories_inline = [
       "touch /var/log/audit/audit.log",
       "mkdir -p ${local.working_dir}",
       "mkdir -p ${local.working_dir}/grafana/config/dashboards",
@@ -295,6 +291,8 @@ resource "null_resource" "setup_directories" {
       "mkdir -p ${local.working_dir}/promtail/config",
       "mkdir -p ${local.working_dir}/promtail/positions",
       "mkdir -p ${local.working_dir}/etc",
+      "mkdir -p ${local.working_dir}/alloy",
+      "mkdir -p ${local.working_dir}/alloy/config",
       "mkdir -p ${local.working_dir}/otel",
       "mkdir -p ${local.working_dir}/otel/config",
       "mkdir -p ${local.working_dir}/caddy",
@@ -307,6 +305,11 @@ resource "null_resource" "setup_directories" {
       "chown -R 10001:10001 ${local.working_dir}/loki",                                    # loki user
       "chown -R 65534:65534 ${local.working_dir}/thanos"                                   # nobody user for Thanos
     ]
+}
+
+resource "null_resource" "setup_directories" {
+  provisioner "remote-exec" {
+    inline = local.setup_directories_inline
 
     connection {
       type        = "ssh"
@@ -314,5 +317,9 @@ resource "null_resource" "setup_directories" {
       host        = var.server_ipv6_address
       private_key = file(var.ssh_key_path)
     }
+  }
+
+  triggers = {
+    inline = join("\n", local.setup_directories_inline)
   }
 }

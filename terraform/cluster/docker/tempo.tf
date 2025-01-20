@@ -93,5 +93,9 @@ resource "docker_container" "tempo" {
   lifecycle {
     # Fix for re-deployment due to network_mode change
     ignore_changes = [network_mode]
+
+    replace_triggered_by = [
+      null_resource.tempo_configs
+    ]
   }
 }

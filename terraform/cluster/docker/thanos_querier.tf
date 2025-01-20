@@ -24,18 +24,6 @@ resource "docker_container" "thanos_querier" {
     [for ip in local.other_server_ips : "--store=[${ip}]:10901"]
   )
 
-  ports {
-    internal = 10903
-    external = 10903
-    protocol = "tcp"
-  }
-
-  ports {
-    internal = 10904
-    external = 10904
-    protocol = "tcp"
-  }
-
   healthcheck {
     test         = ["CMD", "wget", "--spider", "http://localhost:10904/-/healthy"]
     interval     = "30s"

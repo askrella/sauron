@@ -67,5 +67,9 @@ resource "docker_container" "promtail" {
   lifecycle {
     # Fix for re-deployment due to network_mode change
     ignore_changes = [network_mode]
+
+    replace_triggered_by = [
+      null_resource.promtail_configs
+    ]
   }
 }

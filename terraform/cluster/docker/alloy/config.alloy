@@ -1,0 +1,130 @@
+logging {
+  level  = "info"
+  format = "logfmt" // or "json"
+}
+
+tracing {
+  sampling_fraction = 1.0
+}
+
+// OpenTelemetry Collector configuration
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    traces  = [otelcol.connector.spanlogs.default.input]
+    logs  = [otelcol.connector.spanlogs.default.input]
+    metrics = [otelcol.exporter.prometheus.default.input]
+  }
+}
+
+otelcol.connector.spanlogs "default" {
+  spans = true
+  roots = true
+  events = true
+
+  span_attributes = [
+    "service.name",
+    "deployment.environment",
+    "deployment.stage",
+  ]
+
+  process_attributes = [
+    "service.name",
+    "deployment.environment",
+    "deployment.stage",
+  ]
+
+  event_attributes = [
+    "log.severity",
+    "log.message",
+    "deployment.environment",
+    "deployment.stage",
+  ]
+
+  labels = [
+    "service.name",
+    "deployment.environment",
+    "deployment.stage",
+  ]
+
+  output {
+    logs = [otelcol.processor.transform.upstream_service_name_logs.input]
+    traces = [otelcol.processor.transform.upstream_service_name_traces.input]
+  }
+}
+
+otelcol.processor.transform "upstream_service_name_logs" {
+  error_mode = "propagate"
+
+  log_statements {
+    context = "log"
+    statements = [
+      `set(resource.attributes["service.name"], attributes["service.name"]) where attributes["service.name"] != nil`,
+    ]
+  }
+
+  output {
+    logs = [otelcol.exporter.otlphttp.loki.input]
+  }
+}
+
+otelcol.processor.transform "upstream_service_name_traces" {
+  error_mode = "propagate"
+
+  trace_statements {
+    context = "span"
+    statements = [
+      `set(resource.attributes["service.name"], attributes["service.name"]) where attributes["service.name"] != nil`,
+    ]
+  }
+
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlphttp "loki" {
+  client {
+    endpoint = "http://loki-${index}:3100/otlp"
+    tls {
+        insecure = true
+    }
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "http://tempo-${index}:4417"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// Otel Metrics configuration
+
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.prometheus.receiver]
+}
+
+// Prometheus configuration
+
+prometheus.receive_http "default" {
+  http {
+    listen_address = "0.0.0.0"
+    listen_port = 9090
+  }
+  forward_to = [prometheus.remote_write.prometheus.receiver]
+}
+
+prometheus.remote_write "prometheus" {
+  endpoint {
+    url = "http://prometheus:8889/api/v1/write"
+  }
+}

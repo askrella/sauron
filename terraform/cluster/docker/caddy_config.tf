@@ -29,3 +29,11 @@ resource "null_resource" "caddy_config" {
 
   depends_on = [null_resource.setup_directories]
 }
+
+resource "null_resource" "caddy_configs" {
+  triggers = {
+    config = null_resource.caddy_config.id
+  }
+
+  depends_on = [null_resource.caddy_config]
+}
