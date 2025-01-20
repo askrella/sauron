@@ -164,6 +164,8 @@ gf_auth_google_allowed_domains = "example.com"
    ```yaml
    endpoint http: http://example.com:2053 (basic auth with the credentials you provided in the `terraform.tfvars` file)
    endpoint grpc: http://example.com:2083 (basic auth with the credentials you provided in the `terraform.tfvars` file)
+
+   Note: We ran into issues with the Base64 encoding of the credentials. When you verify your credentials using e.g. Postman, you will possibly notice the Base64 includes padding on the end, which may cause issues with Caddy. In this case, please use `echo -n 'otel:password' | base64` which will not include a newline at the end of echo. When using GNU utils, you may also prefer to use `base64 --strict` in order to enforce RFC 4648-compliant Base64 encoding.
    ```
 
 ### Persistent Storage of Terraform State
@@ -278,7 +280,7 @@ You can connect to a server by using the ssh key provided in the terraform direc
 
 Example:
 ```bash
-cd terraform && ssh -i terraform/id_ed25519 -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@2a02:1e8:c012:ddd1::1
+ssh -i terraform/id_ed25519 -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" root@2a02:1e8:c012:ddd1::1
 ```
 
 ## Checkout these other tools we love at Askrella ❤️
