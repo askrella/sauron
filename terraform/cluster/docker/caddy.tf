@@ -72,7 +72,7 @@ resource "docker_container" "caddy" {
 
   depends_on = [
     docker_container.grafana,
-    docker_container.otel,
+    docker_container.alloy,
     null_resource.caddy_config
   ]
 
