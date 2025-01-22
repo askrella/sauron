@@ -106,3 +106,31 @@ resource "minio_s3_bucket" "bucket" {
   acl            = "private"
   object_locking = false
 }
+
+variable "mariadb_root_password" {
+  type        = string
+  description = "The root password for MariaDB"
+  sensitive   = true
+}
+
+variable "mariadb_database" {
+  type        = string
+  description = "The name of the MariaDB database to create"
+}
+
+variable "mariadb_user" {
+  type        = string
+  description = "The name of the MariaDB user to create"
+}
+
+variable "mariadb_password" {
+  type        = string
+  description = "The password for the MariaDB user"
+  sensitive   = true
+}
+
+variable "mariadb_backup_password" {
+  type        = string
+  description = "The password for the MariaDB backup user"
+  sensitive   = true
+}

@@ -108,6 +108,16 @@ resource "docker_container" "grafana" {
     "GF_SECURITY_ADMIN_PASSWORD=${var.grafana_admin_password}",
     "GF_AUTH_LOGOUT_REDIRECT_URL=${var.grafana_logout_redirect_url}",
 
+    # Database configuration
+    "GF_DATABASE_TYPE=mysql",
+    "GF_DATABASE_HOST=mariadb-${var.index}:3306",
+    "GF_DATABASE_NAME=${var.mariadb_database}",
+    "GF_DATABASE_USER=${var.mariadb_user}",
+    "GF_DATABASE_PASSWORD=${var.mariadb_password}",
+    "GF_DATABASE_MAX_OPEN_CONN=100",
+    "GF_DATABASE_MAX_IDLE_CONN=100",
+    "GF_DATABASE_CONN_MAX_LIFETIME=14400",
+
     # Provisioning data sources
     "GF_INSTALL_PLUGINS=https://storage.googleapis.com/integration-artifacts/grafana-exploretraces-app/grafana-exploretraces-app-latest.zip;grafana-traces-app",
     "GF_PATHS_PROVISIONING=/etc/grafana/provisioning",

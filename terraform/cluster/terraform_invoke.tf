@@ -96,6 +96,34 @@ variable "minio_region" {
   description = "The MinIO region"
 }
 
+variable "mariadb_root_password" {
+  type        = string
+  description = "The root password for MariaDB"
+  sensitive   = true
+}
+
+variable "mariadb_backup_password" {
+  type        = string
+  description = "The password for the MariaDB backup user"
+  sensitive   = true
+}
+
+variable "mariadb_database" {
+  type        = string
+  description = "The name of the MariaDB database to create"
+}
+
+variable "mariadb_user" {
+  type        = string
+  description = "The name of the MariaDB user to create"
+}
+
+variable "mariadb_password" {
+  type        = string
+  description = "The password for the MariaDB user"
+  sensitive   = true
+}
+
 resource "local_file" "tfvars" {
   count    = var.cluster_size
   filename = "${path.module}/docker/terraform.tfvars.${count.index}"
@@ -125,6 +153,12 @@ resource "local_file" "tfvars" {
     gf_auth_google_api_url = "https://openidconnect.googleapis.com/v1/userinfo"
     gf_auth_google_allowed_domains = "${var.gf_auth_google_allowed_domains}"
     gf_auth_google_allow_sign_up = "true"
+
+    mariadb_root_password = "${var.mariadb_root_password}"
+    mariadb_backup_password = "${var.mariadb_backup_password}"
+    mariadb_database = "${var.mariadb_database}"
+    mariadb_user = "${var.mariadb_user}"
+    mariadb_password = "${var.mariadb_password}"
 
     minio_bucket = "${var.minio_bucket}"
     minio_user = "${var.minio_user}"

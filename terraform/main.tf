@@ -64,6 +64,12 @@ module "cluster" {
   gf_auth_google_client_secret   = var.gf_auth_google_client_secret
   gf_auth_google_allowed_domains = var.gf_auth_google_allowed_domains
 
+  mariadb_root_password = var.mariadb_root_password
+  mariadb_backup_password = var.mariadb_backup_password
+  mariadb_database      = var.mariadb_database
+  mariadb_user          = var.mariadb_user
+  mariadb_password      = var.mariadb_password
+
   depends_on = [module.server, minio_s3_bucket.bucket]
 }
 

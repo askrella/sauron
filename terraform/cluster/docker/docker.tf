@@ -195,6 +195,34 @@ variable "gf_auth_google_allow_sign_up" {
   description = "Allow sign up through Google OAuth"
 }
 
+variable "mariadb_root_password" {
+  type        = string
+  description = "The root password for MariaDB"
+  sensitive   = true
+}
+
+variable "mariadb_database" {
+  type        = string
+  description = "The name of the MariaDB database to create"
+}
+
+variable "mariadb_user" {
+  type        = string
+  description = "The name of the MariaDB user to create"
+}
+
+variable "mariadb_password" {
+  type        = string
+  description = "The password for the MariaDB user"
+  sensitive   = true
+}
+
+variable "mariadb_backup_password" {
+  type        = string
+  description = "The password for the MariaDB backup user"
+  sensitive   = true
+}
+
 locals {
   # Get all server IPs except our own for Thanos Query to connect to other sidecars
   other_server_ips = [
@@ -272,6 +300,10 @@ locals {
   setup_directories_inline = [
       "touch /var/log/audit/audit.log",
       "mkdir -p ${local.working_dir}",
+      "mkdir -p ${local.working_dir}/mariadb",
+      "mkdir -p ${local.working_dir}/mariadb/data",
+      "mkdir -p ${local.working_dir}/mariadb/backup",
+      "chown -R 1001:1001 ${local.working_dir}/mariadb",
       "mkdir -p ${local.working_dir}/grafana/config/dashboards",
       "mkdir -p ${local.grafana_plugins_dir}",
       "mkdir -p ${local.working_dir}/grafana/config/provisioning/datasources",

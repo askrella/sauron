@@ -1,0 +1,46 @@
+[mysqld]
+bind-address=::
+server_id=${server_id}
+default_storage_engine=InnoDB
+binlog_format=ROW
+innodb_autoinc_lock_mode=2
+innodb_flush_log_at_trx_commit=0
+innodb_buffer_pool_size=128M
+
+# IPv6 Configuration
+skip-name-resolve
+
+# Galera Provider Configuration
+wsrep_on=ON
+wsrep_provider=/usr/lib/galera/libgalera_smm.so
+wsrep_provider_options="gcache.size=128M"
+
+# Galera Cluster Configuration
+wsrep_cluster_name="${cluster_name}"
+wsrep_cluster_address="${cluster_address}"
+
+# Galera Node Configuration
+wsrep_node_name="${node_name}"
+wsrep_node_address="${node_address}"
+
+# SST Configuration
+wsrep_sst_method=mariabackup
+wsrep_sst_auth=root:${backup_secret_key}
+
+# Galera Synchronization Configuration
+wsrep_sync_wait=1
+
+# Backup Configuration
+[mariabackup]
+backup-dir=/var/lib/mysql/backup
+s3-bucket=${backup_bucket}
+s3-region=${backup_region}
+s3-access-key=${backup_access_key}
+s3-secret-key=${backup_secret_key}
+s3-endpoint=${backup_endpoint}
+s3-storage-class=STANDARD
+s3-path=${backup_path}
+
+[mysql_safe]
+log-error=/var/log/mariadb/error.log
+pid-file=/var/run/mariadb/mariadb.pid 
