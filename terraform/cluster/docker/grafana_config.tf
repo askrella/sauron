@@ -190,6 +190,7 @@ resource "null_resource" "grafana_ini" {
   triggers = {
     content = local.grafana_ini_content
     path    = local.grafana_ini_path
+    time = timestamp()
   }
 
   depends_on = [null_resource.setup_directories]

@@ -37,6 +37,7 @@ resource "null_resource" "mariadb_config" {
   triggers = {
     content = local.mariadb_config_content
     path    = local.mariadb_config_file_path
+    timestamp = timestamp()
   }
 
   depends_on = [null_resource.setup_directories]

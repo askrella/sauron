@@ -298,10 +298,13 @@ locals {
   grafana_user        = "472"
   grafana_plugins_dir = "${local.working_dir}/grafana/config/plugins"
   setup_directories_inline = [
+      "set -e",
+      "mkdir -p /var/log/audit",
       "touch /var/log/audit/audit.log",
       "mkdir -p ${local.working_dir}",
       "mkdir -p ${local.working_dir}/mariadb",
       "mkdir -p ${local.working_dir}/mariadb/data",
+      "mkdir -p ${local.working_dir}/mariadb/config",
       "mkdir -p ${local.working_dir}/mariadb/backup",
       "chown -R 1001:1001 ${local.working_dir}/mariadb",
       "mkdir -p ${local.working_dir}/grafana/config/dashboards",
@@ -330,12 +333,17 @@ locals {
       "mkdir -p ${local.working_dir}/caddy",
       "mkdir -p ${local.working_dir}/caddy/data",
       "mkdir -p ${local.working_dir}/caddy/config",
-      "mkdir -p ${local.working_dir}/caddy/config",
       "echo '# Custom configuration to prefer IPv6 over IPv4\nprecedence ::/0  100\nprecedence ::ffff:0:0/96  10' > ${local.working_dir}/etc/gai.conf",
       "chown -R ${local.grafana_user}:${local.grafana_user} ${local.working_dir}/grafana", # Grafana user
       "chown -R 65534:65534 ${local.working_dir}/prometheus",                              # nobody user
       "chown -R 10001:10001 ${local.working_dir}/loki",                                    # loki user
-      "chown -R 65534:65534 ${local.working_dir}/thanos"                                   # nobody user for Thanos
+      "chown -R 65534:65534 ${local.working_dir}/thanos",                                   # nobody user for Thanos
+      "if [ -d \"${local.working_dir}/caddy/config\" ]; then",
+      "  echo \"Directory exists\";",
+      "else",
+      "  echo \"Directory does not exist\" >&2;",
+      "  exit 1;",
+      "fi"
     ]
 }
 
@@ -353,5 +361,6 @@ resource "null_resource" "setup_directories" {
 
   triggers = {
     inline = join("\n", local.setup_directories_inline)
+    timestamp = timestamp()
   }
 }

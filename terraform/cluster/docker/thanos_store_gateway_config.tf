@@ -19,6 +19,7 @@ locals {
 resource "null_resource" "thanos_store_gateway_config" {
     provisioner "remote-exec" {
         inline = [
+            "set -e",
             "mkdir -p ${local.thanos_store_gateway_config_path_dir}",
             "mkdir -p ${local.thanos_store_gateway_data_dir}"
         ]

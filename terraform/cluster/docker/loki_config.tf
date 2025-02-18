@@ -20,6 +20,7 @@ locals {
 resource "null_resource" "loki_config" {
     provisioner "remote-exec" {
         inline = [
+            "set -e",
             "mkdir -p ${local.loki_config_path_dir}",
             "mkdir -p ${local.loki_data_dir}"
         ]

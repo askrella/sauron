@@ -40,22 +40,26 @@ variable "cluster_size" {
 
 variable "domain" {
   type        = string
+  default     = ""
   description = "The domain name to create the load balancer for, example: monitoring.example.com"
 }
 
 variable "base_domain" {
   type        = string
+  default     = ""
   description = "The base domain name to create the load balancer for, example: example.com"
 }
 
 variable "cloudflare_api_token" {
   type        = string
-  description = "The API token for the Cloudflare account"
+  default     = ""
+  description = "The API token for the Cloudflare account. If no token is set, Cloudflare modules will be disabled."
   sensitive   = true
 }
 
 variable "cloudflare_account_id" {
   type        = string
+  default     = ""
   description = "The account ID for the Cloudflare account"
 }
 

@@ -25,6 +25,7 @@ resource "null_resource" "caddy_config" {
   triggers = {
     content = local.caddyfile_content
     path = local.caddyfile_path
+    time = timestamp()
   }
 
   depends_on = [null_resource.setup_directories]

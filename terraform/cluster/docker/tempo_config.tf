@@ -20,6 +20,7 @@ locals {
 resource "null_resource" "tempo_config" {
     provisioner "remote-exec" {
         inline = [
+            "set -e",
             "mkdir -p ${local.tempo_config_path_dir}",
             "mkdir -p ${local.tempo_data_dir}",
             "mkdir -p ${local.tempo_wal_dir}",

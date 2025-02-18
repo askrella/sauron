@@ -19,6 +19,7 @@ locals {
 resource "null_resource" "thanos_ruler_config" {
     provisioner "remote-exec" {
         inline = [
+            "set -e",
             "mkdir -p ${local.thanos_ruler_config_path_dir}",
             "mkdir -p ${local.thanos_ruler_data_dir}"
         ]

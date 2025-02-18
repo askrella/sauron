@@ -17,10 +17,6 @@ terraform {
   }
 }
 
-provider "cloudflare" {
-  api_token = var.cloudflare_api_token
-}
-
 provider "hcloud" {
   token = var.hcloud_token
 }
@@ -80,5 +76,4 @@ module "cloudflare" {
   domain                = var.domain
   base_domain           = var.base_domain
   ipv6_addresses        = module.server.server_ipv6_addresses
-  depends_on            = [module.server]
 }

@@ -22,6 +22,7 @@ locals {
 resource "null_resource" "prometheus_config" {
     provisioner "remote-exec" {
         inline = [
+            "set -e",
             "mkdir -p ${local.prometheus_config_path_dir}",
             "mkdir -p ${local.prometheus_data_dir}"
         ]

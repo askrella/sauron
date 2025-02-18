@@ -19,6 +19,7 @@ locals {
 resource "null_resource" "promtail_config" {
     provisioner "remote-exec" {
         inline = [
+            "set -e",
             "mkdir -p ${local.promtail_config_path_dir}",
             "mkdir -p ${local.promtail_positions_dir}"
         ]

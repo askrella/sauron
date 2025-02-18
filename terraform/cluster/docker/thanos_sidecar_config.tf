@@ -19,6 +19,7 @@ locals {
 resource "null_resource" "thanos_sidecar_config" {
     provisioner "remote-exec" {
         inline = [
+            "set -e",
             "mkdir -p ${local.thanos_sidecar_config_path_dir}"
         ]
 
