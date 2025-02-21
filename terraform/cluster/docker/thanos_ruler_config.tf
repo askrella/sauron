@@ -15,50 +15,59 @@ locals {
     })
 }
 
+# Create config directory
+resource "ssh_directory" "thanos_ruler_config_dir" {
+  path        = local.thanos_ruler_config_path_dir
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username       = "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [null_resource.setup_directories]
+}
+
+# Create data directory
+resource "ssh_directory" "thanos_ruler_data_dir" {
+  path        = local.thanos_ruler_data_dir
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username       = "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [null_resource.setup_directories]
+}
+
 # Thanos Ruler config
-resource "null_resource" "thanos_ruler_config" {
-    provisioner "remote-exec" {
-        inline = [
-            "set -e",
-            "mkdir -p ${local.thanos_ruler_config_path_dir}",
-            "mkdir -p ${local.thanos_ruler_data_dir}"
-        ]
+resource "ssh_file" "thanos_ruler_config" {
+  content     = local.thanos_ruler_config_content
+  path = local.thanos_ruler_config_file_path
+  permissions = "0644"
 
-        connection {
-            type        = "ssh"
-            user        = "root"
-            host        = var.server_ipv6_address
-            private_key = file(var.ssh_key_path)
-        }
-    }
+  ssh = {
+    host        = var.server_ipv6_address
+    username       = "root"
+    private_key = file(var.ssh_key_path)
+  }
 
-    provisioner "file" {
-        content     = local.thanos_ruler_config_content
-        destination = local.thanos_ruler_config_file_path
-
-        connection {
-            type        = "ssh"
-            user        = "root"
-            host        = var.server_ipv6_address
-            private_key = file(var.ssh_key_path)
-        }
-    }
-
-    triggers = {
-        content = local.thanos_ruler_config_content
-        path    = local.thanos_ruler_config_file_path
-    }
-
-    depends_on = [null_resource.setup_directories]
+  depends_on = [
+    ssh_directory.thanos_ruler_config_dir,
+    ssh_directory.thanos_ruler_data_dir
+  ]
 }
 
 # Aggregate resource to depend on all Thanos Ruler configs
 resource "null_resource" "thanos_ruler_configs" {
-    triggers = {
-        config = null_resource.thanos_ruler_config.id
-    }
+  triggers = {
+    config = ssh_file.thanos_ruler_config.id
+  }
 
-    depends_on = [
-        null_resource.thanos_ruler_config
-    ]
+  depends_on = [
+    ssh_file.thanos_ruler_config
+  ]
 }

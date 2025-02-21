@@ -21,23 +21,15 @@ locals {
 }
 
 # MariaDB config
-resource "null_resource" "mariadb_config" {
-  provisioner "file" {
-    content     = local.mariadb_config_content
-    destination = local.mariadb_config_file_path
+resource "ssh_file" "mariadb_config" {
+  content     = local.mariadb_config_content
+  path = local.mariadb_config_file_path
+  permissions = "0644"
 
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    content = local.mariadb_config_content
-    path    = local.mariadb_config_file_path
-    timestamp = timestamp()
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
   }
 
   depends_on = [null_resource.setup_directories]
@@ -46,10 +38,10 @@ resource "null_resource" "mariadb_config" {
 # Aggregate resource to depend on all MariaDB configs
 resource "null_resource" "mariadb_configs" {
   triggers = {
-    config = null_resource.mariadb_config.id
+    config = ssh_file.mariadb_config.id
   }
 
   depends_on = [
-    null_resource.mariadb_config
+    ssh_file.mariadb_config
   ]
 }

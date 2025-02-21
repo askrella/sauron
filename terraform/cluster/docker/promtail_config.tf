@@ -15,50 +15,59 @@ locals {
     })
 }
 
+# Create config directory
+resource "ssh_directory" "promtail_config_dir" {
+  path        = local.promtail_config_path_dir
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [null_resource.setup_directories]
+}
+
+# Create positions directory
+resource "ssh_directory" "promtail_positions_dir" {
+  path        = local.promtail_positions_dir
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [null_resource.setup_directories]
+}
+
 # Promtail config
-resource "null_resource" "promtail_config" {
-    provisioner "remote-exec" {
-        inline = [
-            "set -e",
-            "mkdir -p ${local.promtail_config_path_dir}",
-            "mkdir -p ${local.promtail_positions_dir}"
-        ]
+resource "ssh_file" "promtail_config" {
+  content     = local.promtail_config_content
+  path = local.promtail_config_file_path
+  permissions = "0644"
 
-        connection {
-            type        = "ssh"
-            user        = "root"
-            host        = var.server_ipv6_address
-            private_key = file(var.ssh_key_path)
-        }
-    }
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
+  }
 
-    provisioner "file" {
-        content     = local.promtail_config_content
-        destination = local.promtail_config_file_path
-
-        connection {
-            type        = "ssh"
-            user        = "root"
-            host        = var.server_ipv6_address
-            private_key = file(var.ssh_key_path)
-        }
-    }
-
-    triggers = {
-        content = local.promtail_config_content
-        path    = local.promtail_config_file_path
-    }
-
-    depends_on = [null_resource.setup_directories]
+  depends_on = [
+    ssh_directory.promtail_config_dir,
+    ssh_directory.promtail_positions_dir
+  ]
 }
 
 # Aggregate resource to depend on all Promtail configs
 resource "null_resource" "promtail_configs" {
-    triggers = {
-        config = null_resource.promtail_config.id
-    }
+  triggers = {
+    config = ssh_file.promtail_config.id
+  }
 
-    depends_on = [
-        null_resource.promtail_config
-    ]
+  depends_on = [
+    ssh_file.promtail_config
+  ]
 }

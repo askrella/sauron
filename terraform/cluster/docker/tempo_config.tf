@@ -16,52 +16,94 @@ locals {
     })
 }
 
+# Create config directory
+resource "ssh_directory" "tempo_config_dir" {
+  path        = local.tempo_config_path_dir
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [null_resource.setup_directories]
+}
+
+# Create data directory
+resource "ssh_directory" "tempo_data_dir" {
+  path        = local.tempo_data_dir
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [null_resource.setup_directories]
+}
+
+# Create WAL directory
+resource "ssh_directory" "tempo_wal_dir" {
+  path        = local.tempo_wal_dir
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [ssh_directory.tempo_data_dir]
+}
+
+resource "null_resource" "set_ownership_tempo" {
+  provisioner "remote-exec" {
+    inline = [
+      "chown -R 65534:65534 ${local.working_dir}/tempo"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "root"
+      host        = var.server_ipv6_address
+      private_key = file(var.ssh_key_path)
+    }
+  }
+
+  depends_on = [
+    ssh_directory.tempo_config_dir,
+    ssh_directory.tempo_data_dir,
+    ssh_directory.tempo_wal_dir
+  ]
+}
+
 # Tempo config
-resource "null_resource" "tempo_config" {
-    provisioner "remote-exec" {
-        inline = [
-            "set -e",
-            "mkdir -p ${local.tempo_config_path_dir}",
-            "mkdir -p ${local.tempo_data_dir}",
-            "mkdir -p ${local.tempo_wal_dir}",
-            "chown -R 65534:65534 ${local.working_dir}/tempo"
-        ]
+resource "ssh_file" "tempo_config" {
+  content     = local.tempo_config_content
+  path = local.tempo_config_file_path
+  permissions = "0644"
 
-        connection {
-            type        = "ssh"
-            user        = "root"
-            host        = var.server_ipv6_address
-            private_key = file(var.ssh_key_path)
-        }
-    }
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
+  }
 
-    provisioner "file" {
-        content     = local.tempo_config_content
-        destination = local.tempo_config_file_path
-
-        connection {
-            type        = "ssh"
-            user        = "root"
-            host        = var.server_ipv6_address
-            private_key = file(var.ssh_key_path)
-        }
-    }
-
-    triggers = {
-        content = local.tempo_config_content
-        path    = local.tempo_config_file_path
-    }
-
-    depends_on = [null_resource.setup_directories]
+  depends_on = [
+    ssh_directory.tempo_config_dir,
+    null_resource.set_ownership_tempo
+  ]
 }
 
 # Aggregate resource to depend on all Tempo configs
 resource "null_resource" "tempo_configs" {
-    triggers = {
-        config = null_resource.tempo_config.id
-    }
+  triggers = {
+    config = ssh_file.tempo_config.id
+  }
 
-    depends_on = [
-        null_resource.tempo_config
-    ]
+  depends_on = [
+    ssh_file.tempo_config
+  ]
 }
