@@ -92,7 +92,7 @@ resource "hcloud_server" "server" {
   image       = var.image
   location    = var.location
   server_type = var.server_type
-  ssh_keys    = [hcloud_ssh_key.main.id]
+  ssh_keys    = concat([hcloud_ssh_key.main.id], data.hcloud_ssh_keys.all_keys.ssh_keys[*].id)
 
   # Allows downsizing the server
   keep_disk = true
@@ -133,6 +133,10 @@ resource "hcloud_network_subnet" "subnet" {
 }
 
 # SSH Key Definition
+
+data "hcloud_ssh_keys" "all_keys" {
+  with_selector = "default=true"
+}
 
 resource "hcloud_ssh_key" "main" {
   name       = "${var.cluster_name}-ssh-key"
@@ -285,6 +289,7 @@ resource "null_resource" "ssh_check" {
 
   provisioner "remote-exec" {
     inline = [
+      "set -e",
       "echo 'Waiting for cloud-init to finish'",
       "timeout 120 bash -c 'while [ ! -f /var/lib/cloud/instance/boot-finished ]; do sleep 1; done'", # Wait for cloud-init to finish with timeout
       "echo 'Waiting for docker to be available'",

@@ -8,11 +8,19 @@ terraform {
       source  = "hashicorp/null"
       version = "~> 3.0"
     }
+    ssh = {
+      source  = "askrella/ssh"
+      version = "~> 0.1.9"
+    }
   }
+}
+
+provider "ssh" {
 }
 
 locals {
   working_dir = "/home/docker"
+  grafana_plugins_dir = "${local.working_dir}/grafana/config/plugins"
 }
 
 variable "domain" {
@@ -64,6 +72,27 @@ variable "otel_collector_password" {
 variable "minio_bucket" {
   type        = string
   description = "The MinIO bucket name"
+}
+
+resource "null_resource" "healthcheck_container" {
+  provisioner "remote-exec" {
+    inline = [
+      "docker run --rm hello-world"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "root"
+      host        = var.server_ipv6_address
+      private_key = file(var.ssh_key_path)
+    }
+  }
+
+  depends_on = [
+    docker_image.hello_world,
+    null_resource.ssh_check,
+    null_resource.setup_directories
+  ]
 }
 
 locals {
@@ -264,27 +293,6 @@ resource "null_resource" "ssh_check" {
   }
 }
 
-resource "null_resource" "healthcheck_container" {
-  provisioner "remote-exec" {
-    inline = [
-      "docker run --rm hello-world"
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  depends_on = [
-    docker_image.hello_world,
-    null_resource.ssh_check,
-    null_resource.setup_directories
-  ]
-}
-
 resource "docker_image" "hello_world" {
   name         = "hello-world:latest"
   keep_locally = false
@@ -296,12 +304,14 @@ resource "docker_image" "hello_world" {
 
 locals {
   grafana_user        = "472"
-  grafana_plugins_dir = "${local.working_dir}/grafana/config/plugins"
   setup_directories_inline = [
+      "set -e",
+      "mkdir -p /var/log/audit",
       "touch /var/log/audit/audit.log",
       "mkdir -p ${local.working_dir}",
       "mkdir -p ${local.working_dir}/mariadb",
       "mkdir -p ${local.working_dir}/mariadb/data",
+      "mkdir -p ${local.working_dir}/mariadb/config",
       "mkdir -p ${local.working_dir}/mariadb/backup",
       "chown -R 1001:1001 ${local.working_dir}/mariadb",
       "mkdir -p ${local.working_dir}/grafana/config/dashboards",
@@ -330,12 +340,17 @@ locals {
       "mkdir -p ${local.working_dir}/caddy",
       "mkdir -p ${local.working_dir}/caddy/data",
       "mkdir -p ${local.working_dir}/caddy/config",
-      "mkdir -p ${local.working_dir}/caddy/config",
       "echo '# Custom configuration to prefer IPv6 over IPv4\nprecedence ::/0  100\nprecedence ::ffff:0:0/96  10' > ${local.working_dir}/etc/gai.conf",
       "chown -R ${local.grafana_user}:${local.grafana_user} ${local.working_dir}/grafana", # Grafana user
       "chown -R 65534:65534 ${local.working_dir}/prometheus",                              # nobody user
       "chown -R 10001:10001 ${local.working_dir}/loki",                                    # loki user
-      "chown -R 65534:65534 ${local.working_dir}/thanos"                                   # nobody user for Thanos
+      "chown -R 65534:65534 ${local.working_dir}/thanos",                                   # nobody user for Thanos
+      "if [ -d \"${local.working_dir}/caddy/config\" ]; then",
+      "  echo \"Directory exists\";",
+      "else",
+      "  echo \"Directory does not exist\" >&2;",
+      "  exit 1;",
+      "fi"
     ]
 }
 
@@ -353,5 +368,129 @@ resource "null_resource" "setup_directories" {
 
   triggers = {
     inline = join("\n", local.setup_directories_inline)
+    timestamp = timestamp()
   }
+}
+
+# Create base directories
+resource "ssh_directory" "base_dir" {
+  path        = local.working_dir
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username =        "root"
+    private_key = file(var.ssh_key_path)
+  }
+}
+
+# Create audit log directory and file
+resource "ssh_directory" "audit_dir" {
+  path        = "/var/log/audit"
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username =        "root"
+    private_key = file(var.ssh_key_path)
+  }
+}
+
+resource "null_resource" "audit_log" {
+  provisioner "remote-exec" {
+    inline = [
+      "touch /var/log/audit/audit.log"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "root"
+      host        = var.server_ipv6_address
+      private_key = file(var.ssh_key_path)
+    }
+  }
+
+  depends_on = [ssh_directory.audit_dir]
+}
+
+# Create service directories
+resource "ssh_directory" "service_dirs" {
+  for_each = toset([
+    "${local.working_dir}/mariadb/data",
+    "${local.working_dir}/mariadb/config",
+    "${local.working_dir}/mariadb/backup",
+    "${local.working_dir}/grafana/config/dashboards",
+    local.grafana_plugins_dir,
+    "${local.working_dir}/grafana/config/provisioning/datasources",
+    "${local.working_dir}/grafana/config/provisioning/alerting",
+    "${local.working_dir}/grafana/data",
+    "${local.working_dir}/prometheus/config",
+    "${local.working_dir}/prometheus/data",
+    "${local.working_dir}/thanos/sidecar/config",
+    "${local.working_dir}/thanos/ruler",
+    "${local.working_dir}/thanos/ruler/config",
+    "${local.working_dir}/thanos/store",
+    "${local.working_dir}/thanos/store/config",
+    "${local.working_dir}/thanos/compactor",
+    "${local.working_dir}/thanos/compactor/config",
+    "${local.working_dir}/loki/config",
+    "${local.working_dir}/loki/data",
+    "${local.working_dir}/promtail/config",
+    "${local.working_dir}/promtail/positions",
+    "${local.working_dir}/etc",
+    "${local.working_dir}/alloy",
+    "${local.working_dir}/alloy/config",
+    "${local.working_dir}/otel",
+    "${local.working_dir}/otel/config",
+    "${local.working_dir}/caddy",
+    "${local.working_dir}/caddy/data",
+    "${local.working_dir}/caddy/config"
+  ])
+
+  path        = each.key
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username =        "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [ssh_directory.base_dir]
+}
+
+# Configure IPv6 preference
+resource "ssh_file" "gai_conf" {
+  content     = "# Custom configuration to prefer IPv6 over IPv4\nprecedence ::/0  100\nprecedence ::ffff:0:0/96  10"
+  path = "${local.working_dir}/etc/gai.conf"
+  permissions = "0644"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username =        "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [ssh_directory.service_dirs]
+}
+
+resource "null_resource" "set_ownership" {
+  provisioner "remote-exec" {
+    inline = [
+      "chown -R ${local.grafana_user}:${local.grafana_user} ${local.working_dir}/grafana",
+      "chown -R 65534:65534 ${local.working_dir}/prometheus",
+      "chown -R 10001:10001 ${local.working_dir}/loki",
+      "chown -R 65534:65534 ${local.working_dir}/thanos",
+      "chown -R 1001:1001 ${local.working_dir}/mariadb"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "root"
+      host        = var.server_ipv6_address
+      private_key = file(var.ssh_key_path)
+    }
+  }
+
+  depends_on = [ssh_directory.service_dirs]
 }

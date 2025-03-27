@@ -6,34 +6,42 @@ locals {
       otel_collector_password = replace(var.otel_collector_password, "$$", "$")
     })
     caddyfile_path = "${local.working_dir}/caddy/Caddyfile"
-
 }
 
-resource "null_resource" "caddy_config" {
-  provisioner "file" {
-    content = local.caddyfile_content
-    destination = local.caddyfile_path
+# Create config directory
+resource "ssh_directory" "caddy_config_dir" {
+  path        = dirname(local.caddyfile_path)
+  permissions = "0755"
 
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    content = local.caddyfile_content
-    path = local.caddyfile_path
+  ssh = {
+    host        = var.server_ipv6_address
+    username =       "root"
+    private_key = file(var.ssh_key_path)
   }
 
   depends_on = [null_resource.setup_directories]
 }
 
-resource "null_resource" "caddy_configs" {
-  triggers = {
-    config = null_resource.caddy_config.id
+# Caddy config
+resource "ssh_file" "caddy_config" {
+  content     = local.caddyfile_content
+  path = local.caddyfile_path
+  permissions = "0644"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username =        "root"
+    private_key = file(var.ssh_key_path)
   }
 
-  depends_on = [null_resource.caddy_config]
+  depends_on = [ssh_directory.caddy_config_dir]
+}
+
+# Aggregate resource to depend on all Caddy configs
+resource "null_resource" "caddy_configs" {
+  triggers = {
+    config = ssh_file.caddy_config.id
+  }
+
+  depends_on = [ssh_file.caddy_config]
 }

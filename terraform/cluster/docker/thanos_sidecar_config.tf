@@ -15,48 +15,42 @@ locals {
     })
 }
 
+# Create config directory
+resource "ssh_directory" "thanos_sidecar_config_dir" {
+  path        = local.thanos_sidecar_config_path_dir
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username       = "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [null_resource.setup_directories]
+}
+
 # Thanos Sidecar config
-resource "null_resource" "thanos_sidecar_config" {
-    provisioner "remote-exec" {
-        inline = [
-            "mkdir -p ${local.thanos_sidecar_config_path_dir}"
-        ]
+resource "ssh_file" "thanos_sidecar_config" {
+  content     = local.thanos_sidecar_config_content
+  path = local.thanos_sidecar_config_file_path
+  permissions = "0644"
 
-        connection {
-            type        = "ssh"
-            user        = "root"
-            host        = var.server_ipv6_address
-            private_key = file(var.ssh_key_path)
-        }
-    }
+  ssh = {
+    host        = var.server_ipv6_address
+    username       = "root"
+    private_key = file(var.ssh_key_path)
+  }
 
-    provisioner "file" {
-        content     = local.thanos_sidecar_config_content
-        destination = local.thanos_sidecar_config_file_path
-
-        connection {
-            type        = "ssh"
-            user        = "root"
-            host        = var.server_ipv6_address
-            private_key = file(var.ssh_key_path)
-        }
-    }
-
-    triggers = {
-        content = local.thanos_sidecar_config_content
-        path    = local.thanos_sidecar_config_file_path
-    }
-
-    depends_on = [null_resource.setup_directories]
+  depends_on = [ssh_directory.thanos_sidecar_config_dir]
 }
 
 # Aggregate resource to depend on all Thanos Sidecar configs
 resource "null_resource" "thanos_sidecar_configs" {
-    triggers = {
-        config = null_resource.thanos_sidecar_config.id
-    }
+  triggers = {
+    config = ssh_file.thanos_sidecar_config.id
+  }
 
-    depends_on = [
-        null_resource.thanos_sidecar_config
-    ]
+  depends_on = [
+    ssh_file.thanos_sidecar_config
+  ]
 }

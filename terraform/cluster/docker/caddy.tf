@@ -73,7 +73,7 @@ resource "docker_container" "caddy" {
   depends_on = [
     docker_container.grafana,
     docker_container.alloy,
-    null_resource.caddy_config
+    ssh_file.caddy_config
   ]
 
   healthcheck {
@@ -89,7 +89,7 @@ resource "docker_container" "caddy" {
     ignore_changes = [network_mode]
 
     replace_triggered_by = [
-      null_resource.caddy_configs
+      ssh_file.caddy_config
     ]
   }
 }

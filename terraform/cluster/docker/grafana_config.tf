@@ -50,192 +50,157 @@ providers:
     })
 }
 
-# Dashboards provider config
-resource "null_resource" "grafana_dashboards_provider" {
-  provisioner "file" {
-    content     = local.grafana_dashboards_content
-    destination = local.grafana_dashboards_config_path
+# Create directories
+resource "ssh_directory" "grafana_dashboards_dir" {
+  path        = local.grafana_dashboards_path_dir
+  permissions = "0755"
 
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    content = local.grafana_dashboards_content
-    path    = local.grafana_dashboards_config_path
+  ssh = {
+    host        = var.server_ipv6_address
+    username =        "root"
+    private_key = file(var.ssh_key_path)
   }
 
   depends_on = [null_resource.setup_directories]
+}
+
+resource "ssh_directory" "grafana_datasources_dir" {
+  path        = local.grafana_datasources_path_dir
+  permissions = "0755"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username =        "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [null_resource.setup_directories]
+}
+
+# Dashboards provider config
+resource "ssh_file" "grafana_dashboards_provider" {
+  content     = local.grafana_dashboards_content
+  path = local.grafana_dashboards_config_path
+  permissions = "0644"
+
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  depends_on = [ssh_directory.grafana_dashboards_dir]
 }
 
 # cAdvisor dashboard
-resource "null_resource" "grafana_dashboard_cadvisor" {
-  provisioner "file" {
-    content     = local.grafana_dashboard_cadvisor_content
-    destination = local.grafana_dashboard_cadvisor_path
+resource "ssh_file" "grafana_dashboard_cadvisor" {
+  content     = local.grafana_dashboard_cadvisor_content
+  path = local.grafana_dashboard_cadvisor_path
+  permissions = "0644"
 
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
   }
 
-  triggers = {
-    content = local.grafana_dashboard_cadvisor_content
-    path    = local.grafana_dashboard_cadvisor_path
-  }
-
-  depends_on = [null_resource.setup_directories]
+  depends_on = [ssh_directory.grafana_dashboards_dir]
 }
 
 # Node exporter dashboard
-resource "null_resource" "grafana_dashboard_node_exporter" {
-  provisioner "file" {
-    content     = local.grafana_dashboard_node_exporter_content
-    destination = local.grafana_dashboard_node_exporter_path
+resource "ssh_file" "grafana_dashboard_node_exporter" {
+  content     = local.grafana_dashboard_node_exporter_content
+  path = local.grafana_dashboard_node_exporter_path
+  permissions = "0644"
 
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
   }
 
-  triggers = {
-    content = local.grafana_dashboard_node_exporter_content
-    path    = local.grafana_dashboard_node_exporter_path
-  }
-
-  depends_on = [null_resource.setup_directories]
+  depends_on = [ssh_directory.grafana_dashboards_dir]
 }
 
 # Thanos dashboard
-resource "null_resource" "grafana_dashboard_thanos" {
-  provisioner "file" {
-    content     = local.grafana_dashboard_thanos_content
-    destination = local.grafana_dashboard_thanos_path
+resource "ssh_file" "grafana_dashboard_thanos" {
+  content     = local.grafana_dashboard_thanos_content
+  path = local.grafana_dashboard_thanos_path
+  permissions = "0644"
 
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
   }
 
-  triggers = {
-    content = local.grafana_dashboard_thanos_content
-    path    = local.grafana_dashboard_thanos_path
-  }
-
-  depends_on = [null_resource.setup_directories]
+  depends_on = [ssh_directory.grafana_dashboards_dir]
 }
 
 # Loki dashboard
-resource "null_resource" "grafana_dashboard_askrella_loki" {
-  provisioner "file" {
-    content     = local.grafana_dashboard_askrella_loki_content
-    destination = local.grafana_dashboard_askrella_loki_path
+resource "ssh_file" "grafana_dashboard_askrella_loki" {
+  content     = local.grafana_dashboard_askrella_loki_content
+  path = local.grafana_dashboard_askrella_loki_path
+  permissions = "0644"
 
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
   }
 
-  triggers = {
-    content = local.grafana_dashboard_askrella_loki_content
-    path    = local.grafana_dashboard_askrella_loki_path
-  }
-
-  depends_on = [null_resource.setup_directories]
+  depends_on = [ssh_directory.grafana_dashboards_dir]
 }
 
 # Grafana.ini config
-resource "null_resource" "grafana_ini" {
-  provisioner "remote-exec" {
-    inline = [
-      "rm -rf ${local.grafana_ini_path}",
-    ]
+resource "ssh_file" "grafana_ini" {
+  content     = local.grafana_ini_content
+  path = local.grafana_ini_path
+  permissions = "0644"
 
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  provisioner "file" {
-    content     = local.grafana_ini_content
-    destination = local.grafana_ini_path
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  triggers = {
-    content = local.grafana_ini_content
-    path    = local.grafana_ini_path
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
   }
 
   depends_on = [null_resource.setup_directories]
 }
 
 # Datasources config
-resource "null_resource" "grafana_datasources" {
-  provisioner "file" {
-    content     = local.grafana_datasources_content
-    destination = local.grafana_datasources_config_path
+resource "ssh_file" "grafana_datasources" {
+  content     = local.grafana_datasources_content
+  path = local.grafana_datasources_config_path
+  permissions = "0644"
 
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
+  ssh = {
+    host        = var.server_ipv6_address
+    username = "root"
+    private_key = file(var.ssh_key_path)
   }
 
-  triggers = {
-    content = local.grafana_datasources_content
-    path    = local.grafana_datasources_config_path
-  }
-
-  depends_on = [null_resource.setup_directories]
+  depends_on = [ssh_directory.grafana_datasources_dir]
 }
 
 # Aggregate resource to depend on all Grafana configs
 resource "null_resource" "grafana_configs" {
   triggers = {
-    dashboards_provider = null_resource.grafana_dashboards_provider.id
-    dashboard_cadvisor = null_resource.grafana_dashboard_cadvisor.id
-    dashboard_node_exporter = null_resource.grafana_dashboard_node_exporter.id
-    dashboard_thanos = null_resource.grafana_dashboard_thanos.id
-    dashboard_loki = null_resource.grafana_dashboard_askrella_loki.id
-    grafana_ini = null_resource.grafana_ini.id
-    datasources = null_resource.grafana_datasources.id
+    dashboards_provider = ssh_file.grafana_dashboards_provider.id
+    dashboard_cadvisor = ssh_file.grafana_dashboard_cadvisor.id
+    dashboard_node_exporter = ssh_file.grafana_dashboard_node_exporter.id
+    dashboard_thanos = ssh_file.grafana_dashboard_thanos.id
+    dashboard_loki = ssh_file.grafana_dashboard_askrella_loki.id
+    grafana_ini = ssh_file.grafana_ini.id
+    datasources = ssh_file.grafana_datasources.id
   }
 
   depends_on = [
-    null_resource.grafana_dashboards_provider,
-    null_resource.grafana_dashboard_cadvisor,
-    null_resource.grafana_dashboard_node_exporter,
-    null_resource.grafana_dashboard_thanos,
-    null_resource.grafana_dashboard_askrella_loki,
-    null_resource.grafana_ini,
-    null_resource.grafana_datasources
+    ssh_file.grafana_dashboards_provider,
+    ssh_file.grafana_dashboard_cadvisor,
+    ssh_file.grafana_dashboard_node_exporter,
+    ssh_file.grafana_dashboard_thanos,
+    ssh_file.grafana_dashboard_askrella_loki,
+    ssh_file.grafana_ini,
+    ssh_file.grafana_datasources
   ]
 }
