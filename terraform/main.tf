@@ -32,15 +32,17 @@ provider "minio" {
 module "server" {
   source        = "./hetzner_server"
   hcloud_token  = var.hcloud_token
-  cluster_name  = "test"
+  cluster_name  = var.cluster_name
   server_count  = var.cluster_size
-  server_prefix = "server"
+  server_prefix = var.resource_prefix
+  enable_ipv4 = var.enable_ipv4
+  enable_ipv6 = var.enable_ipv6
 }
 
 module "cluster" {
   source                = "./cluster"
   server_ipv6_addresses = module.server.server_ipv6_addresses
-  server_ipv4_addresses = module.server.server_ipv4_addresses
+  server_ipv4_addresses = module.server.private_server_ipv4_addresses
   ssh_absolute_key_path = abspath("./id_ed25519")
   cluster_size          = var.cluster_size
   domain                = var.domain
@@ -73,7 +75,9 @@ module "cloudflare" {
   source                = "./cloudflare"
   cloudflare_api_token  = var.cloudflare_api_token
   cloudflare_account_id = var.cloudflare_account_id
+  enable_cloudflare_lb  = var.enable_cloudflare_lb
   domain                = var.domain
   base_domain           = var.base_domain
   ipv6_addresses        = module.server.server_ipv6_addresses
+  ipv4_addresses        = module.server.public_server_ipv4_addresses
 }

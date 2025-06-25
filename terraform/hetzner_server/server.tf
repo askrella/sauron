@@ -74,6 +74,14 @@ variable "server_prefix" {
   description = "(optional) The prefix of the server name."
 }
 
+variable "enable_ipv4" {
+  type = bool
+}
+
+variable "enable_ipv6" {
+  type = bool
+}
+
 provider "hcloud" {
   token = var.hcloud_token
 }
@@ -100,8 +108,8 @@ resource "hcloud_server" "server" {
   user_data = file("./hetzner_server/cloud-init")
 
   public_net {
-    ipv4_enabled = false
-    ipv6_enabled = true
+    ipv4_enabled = var.enable_ipv4
+    ipv6_enabled = var.enable_ipv6
   }
 
   network {
@@ -221,10 +229,10 @@ resource "hcloud_firewall" "cluster_firewall" {
     protocol    = "tcp"
     port        = "22"
     description = "SSH"
-    source_ips = [
-      "0.0.0.0/0",
-      "::/0"
-    ]
+    source_ips = concat(
+        var.enable_ipv6 ? ["::/0"] : [],
+        var.enable_ipv4 ? ["0.0.0.0/0"] : []
+    )
   }
 
   rule {
@@ -232,9 +240,10 @@ resource "hcloud_firewall" "cluster_firewall" {
     protocol    = "tcp"
     port        = "80"
     description = "Grafana"
-    source_ips = [
-      "::/0"
-    ]
+    source_ips = concat(
+        var.enable_ipv6 ? ["::/0"] : [],
+        var.enable_ipv4 ? ["0.0.0.0/0"] : []
+    )
   }
 
   rule {
@@ -242,9 +251,10 @@ resource "hcloud_firewall" "cluster_firewall" {
     protocol    = "tcp"
     port        = "443"
     description = "Grafana"
-    source_ips = [
-      "::/0"
-    ]
+    source_ips = concat(
+        var.enable_ipv6 ? ["::/0"] : [],
+        var.enable_ipv4 ? ["0.0.0.0/0"] : []
+    )
   }
 
   # ICMP (ping)
@@ -252,10 +262,10 @@ resource "hcloud_firewall" "cluster_firewall" {
     direction   = "in"
     protocol    = "icmp"
     description = "ICMP"
-    source_ips = [
-      "0.0.0.0/0",
-      "::/0"
-    ]
+    source_ips = concat(
+        var.enable_ipv6 ? ["::/0"] : [],
+        var.enable_ipv4 ? ["0.0.0.0/0"] : []
+    )
   }
 
   rule {
@@ -263,9 +273,10 @@ resource "hcloud_firewall" "cluster_firewall" {
     protocol    = "tcp"
     port        = "2053"
     description = "OTel Collector HTTP"
-    source_ips = [
-      "::/0"
-    ]
+    source_ips = concat(
+        var.enable_ipv6 ? ["::/0"] : [],
+        var.enable_ipv4 ? ["0.0.0.0/0"] : []
+    )
   }
 
 
@@ -274,9 +285,10 @@ resource "hcloud_firewall" "cluster_firewall" {
     protocol    = "tcp"
     port        = "2083"
     description = "OTel Collector gRPC"
-    source_ips = [
-      "::/0"
-    ]
+    source_ips = concat(
+        var.enable_ipv6 ? ["::/0"] : [],
+        var.enable_ipv4 ? ["0.0.0.0/0"] : []
+    )
   }
 
   labels = local.labels
@@ -316,8 +328,12 @@ resource "null_resource" "ssh_check" {
 
 # Outputs
 
-output "server_ipv4_addresses" {
+output "private_server_ipv4_addresses" {
   value = [for server in hcloud_server.server : one(server.network).ip]
+}
+
+output "public_server_ipv4_addresses" {
+  value = values(hcloud_server.server)[*].ipv4_address
 }
 
 output "server_ipv6_addresses" {
