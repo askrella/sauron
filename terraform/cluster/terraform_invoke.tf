@@ -184,11 +184,11 @@ resource "null_resource" "docker_setup" {
       
       # Run init and log
       TF_LOG_PATH="terraform_init.${count.index}.log" \
-        terraform -chdir=./cluster/docker init
+        terraform -chdir=${path.module}/docker init
 
       # Run plan and log
       TF_LOG_PATH="terraform_plan.${count.index}.log" \
-        terraform -chdir=./cluster/docker plan \
+        terraform -chdir=${path.module}/docker plan \
           -state=terraform.tfstate.${count.index} \
           -var-file=terraform.tfvars.${count.index} \
           -parallelism=10 \
@@ -197,7 +197,7 @@ resource "null_resource" "docker_setup" {
       
       # Run apply and log
       TF_LOG_PATH="terraform_apply.${count.index}.log" \
-        terraform -chdir=./cluster/docker apply -auto-approve \
+        terraform -chdir=${path.module}/docker apply -auto-approve \
           -state=terraform.tfstate.${count.index} \
           -var-file=terraform.tfvars.${count.index} \
           -parallelism=1 \
