@@ -124,11 +124,18 @@ variable "mariadb_password" {
   sensitive   = true
 }
 
+variable "is_local_test_environment" {
+  description = "If true, configures the provider for a local Docker environment."
+  type        = bool
+  default     = false
+}
+
 resource "local_file" "tfvars" {
   count    = var.cluster_size
   filename = "${path.module}/docker/terraform.tfvars.${count.index}"
   content  = <<-EOT
-    server_ipv6_address = "${var.server_ipv6_addresses[count.index]}"
+    is_local_test_environment = ${var.is_local_test_environment}
+    server_ipv6_address = ${var.is_local_test_environment ? "\"127.0.0.1\"" : "\"${var.server_ipv6_addresses[count.index]}\""}
     cluster_ipv6_addresses = ${jsonencode(var.server_ipv6_addresses)}
     cluster_ipv4_addresses = ${jsonencode(var.server_ipv4_addresses)}
     index = ${count.index}
