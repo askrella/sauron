@@ -1,3 +1,7 @@
+.idea
+
+terraform/cluster/docker/registry.terraform.io/
+
 # Terraform state files
 *.tfstate*
 *.tfstate.backup
