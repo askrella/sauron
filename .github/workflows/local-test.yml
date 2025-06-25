@@ -1,0 +1,40 @@
+name: Local Stack Test
+
+on:
+  pull_request:
+
+jobs:
+  test-local-stack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: ./tests/harness
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve -var="is_local_test_environment=true"
+        working-directory: ./tests/harness
+
+      - name: Verify Containers
+        id: verify
+        run: |
+          echo "All services provisioned. Verifying running containers:"
+          docker ps
+          # A simple health check to ensure at least one container is up.
+          # We will build on this with a real test suite later.
+          docker ps | grep -q "Up"
+
+      - name: Terraform Destroy
+        if: always()
+        id: destroy
+        run: terraform destroy -auto-approve -var="is_local_test_environment=true"
+        working-directory: ./tests/harness 
