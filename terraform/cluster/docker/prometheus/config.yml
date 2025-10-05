@@ -7,7 +7,7 @@ global:
     node_ip: ${node_ip}
 
 tracing:
-  endpoint: "otel-${index}:4317"
+  endpoint: "alloy-${index}:4317"
   insecure: true
   sampling_fraction: 0.1
 
@@ -52,9 +52,9 @@ scrape_configs:
     static_configs:
       - targets: ['tempo-${index}:3200']
 
-  - job_name: 'otel-metrics'
+  - job_name: 'alloy-metrics'
     static_configs:
-      - targets: ['otel-${index}:8889']
+      - targets: ['alloy-${index}:12345']
     metrics_path: /metrics
 
   - job_name: 'caddy'

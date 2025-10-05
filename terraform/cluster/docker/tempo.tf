@@ -53,11 +53,12 @@ resource "docker_container" "tempo" {
     read_only      = true
   }
 
-  volumes {
-    container_path = "/tmp/tempo"
-    host_path      = local.tempo_data_dir
-    read_only      = false
-  }
+  #TODO: Needed?
+  #volumes {
+  #  container_path = "/tmp/tempo"
+  #  host_path      = local.tempo_data_dir
+  #  read_only      = false
+  #}
 
   command = [
     "-config.file=/etc/tempo/config.yaml"

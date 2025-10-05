@@ -11,6 +11,10 @@ provider "cloudflare" {
   api_token = var.cloudflare_api_token == "" ? "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" : var.cloudflare_api_token
 }
 
+variable "enable_cloudflare_lb" {
+  type = bool
+}
+
 variable "cloudflare_api_token" {
   type        = string
   description = "The API token for the Cloudflare account"
@@ -34,12 +38,17 @@ variable "domain" {
 
 variable "ipv6_addresses" {
   type        = list(string)
-  description = "List of IPv6 addresses to load balance between"
+  description = "List of IPv6 addresses used by the nodes"
+}
+
+variable "ipv4_addresses" {
+  type        = list(string)
+  description = "List of IPv4 addresses used by the nodes"
 }
 
 # Create monitor to check health of backends
 resource "cloudflare_load_balancer_monitor" "monitor" {
-  count = var.cloudflare_api_token == "" ? 0 : 1 # Option to disable by providing no token
+  count = var.cloudflare_api_token == "" || !var.enable_cloudflare_lb ? 0 : 1 # Option to disable by providing no token
 
   description    = "Health check for monitoring cluster nodes"
   type           = "http"
@@ -53,12 +62,13 @@ resource "cloudflare_load_balancer_monitor" "monitor" {
 }
 
 resource "cloudflare_load_balancer_pool" "pool" {
-  count = var.cloudflare_api_token == "" ? 0 : 1 # Option to disable by providing no token
+  count = var.cloudflare_api_token == "" || !var.enable_cloudflare_lb ? 0 : 1 # Option to disable by providing no token
 
   name    = "monitoring-cluster-pool"
   monitor = cloudflare_load_balancer_monitor.monitor[0].id
 
   dynamic "origins" {
+    //TODO: when ipv6 is enabled, us it; fallback to ipv4
     for_each = { for i, addr in var.ipv6_addresses : i => addr }
     content {
       name    = "node-${origins.key}"
@@ -82,7 +92,7 @@ data "cloudflare_zone" "domain" {
   name = var.base_domain
 }
 
-resource "cloudflare_record" "monitoring_nodes" {
+resource "cloudflare_record" "monitoring_nodes_ipv6" {
   count   = var.cloudflare_api_token == "" ? 0 : length(var.ipv6_addresses)
   zone_id = data.cloudflare_zone.domain[0].id
   name    = "node-${count.index}.${var.domain}"
@@ -92,9 +102,19 @@ resource "cloudflare_record" "monitoring_nodes" {
   ttl     = 60
 }
 
+resource "cloudflare_record" "monitoring_nodes_ipv4" {
+  count   = var.cloudflare_api_token == "" ? 0 : length(var.ipv4_addresses)
+  zone_id = data.cloudflare_zone.domain[0].id
+  name    = "node-${count.index}.${var.domain}"
+  content = var.ipv4_addresses[count.index]
+  type    = "A"
+  proxied = false
+  ttl     = 60
+}
+
 # Create load balancer
 resource "cloudflare_load_balancer" "lb" {
-  count = var.cloudflare_api_token == "" ? 0 : 1 # Option to disable by providing no token
+  count = var.cloudflare_api_token == "" || !var.enable_cloudflare_lb ? 0 : 1 # Option to disable by providing no token
 
   zone_id          = data.cloudflare_zone.domain[0].id
   name             = var.domain

@@ -1,3 +1,18 @@
+variable "enable_cloudflare_lb" {
+  type = bool
+  default = true
+}
+
+variable "enable_ipv4" {
+  type = bool
+  default = false
+}
+
+variable "enable_ipv6" {
+  type = bool
+  default = true
+}
+
 variable "grafana_admin_user" {
   description = "Grafana admin username"
   type        = string
@@ -32,10 +47,20 @@ variable "hcloud_token" {
   sensitive = true
 }
 
+variable "cluster_name" {
+  type = string
+  default = "unknown"
+}
+
 variable "cluster_size" {
   description = "The number of nodes in the cluster"
   type    = number
   default = 1
+}
+
+variable "resource_prefix" {
+  type = string
+  default = "monitoring"
 }
 
 variable "domain" {
