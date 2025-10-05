@@ -81,21 +81,6 @@ resource "cloudflare_load_balancer_pool" "pool" {
     }
   ]
 
-  #dynamic "origins" {
-  #    //TODO: when ipv6 is enabled, us it; fallback to ipv4
-  #    for_each = { for i, addr in var.ipv6_addresses : i => addr }
-  #    content {
-  #      name    = "node-${origins.key}"
-  #      address = "node-${origins.key}.${var.domain}"
-  #      header {
-  #        header = "Host"
-  #        values = ["node-${origins.key}.${var.domain}"]
-  #      }
-  #      enabled = true
-  #      weight  = 1
-  #    }
-  #  }
-
   account_id = var.cloudflare_account_id
 }
 
