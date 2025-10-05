@@ -7,11 +7,13 @@ locals {
 
     # Tempo config content
     tempo_config_content = templatefile("${path.module}/tempo/config.yaml", {
+        ip            = var.server_ipv6_address
         bucket        = var.minio_bucket
         endpoint      = local.minio_endpoint
         access_key    = var.minio_user
         secret_key    = var.minio_password
         region        = var.minio_region
+        node_id       = var.index
         tempo_members = join("\n", [for node_ip in local.other_server_ips : "    - ${node_ip}:7956"])
     })
 }

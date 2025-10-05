@@ -40,10 +40,24 @@ resource "docker_container" "caddy" {
   }
 
   ports {
+    internal = 2053
+    external = 2053
+    protocol = "tcp"
+    ip       = "0.0.0.0"
+  }
+
+  ports {
     internal = 2083
     external = 2083
     protocol = "tcp"
     ip       = "::"
+  }
+
+  ports {
+    internal = 2083
+    external = 2083
+    protocol = "tcp"
+    ip       = "0.0.0.0"
   }
 
   volumes {

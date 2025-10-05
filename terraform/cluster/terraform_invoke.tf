@@ -135,7 +135,7 @@ resource "local_file" "tfvars" {
   filename = "${path.module}/docker/terraform.tfvars.${count.index}"
   content  = <<-EOT
     is_local_test_environment = ${var.is_local_test_environment}
-    server_ipv6_address = ${var.is_local_test_environment ? "\"127.0.0.1\"" : "\"${var.server_ipv6_addresses[count.index]}\""}
+    server_ipv6_address = ${var.is_local_test_environment ? "\"::1\"" : "\"${var.server_ipv6_addresses[count.index]}\""}
     cluster_ipv6_addresses = ${jsonencode(var.server_ipv6_addresses)}
     cluster_ipv4_addresses = ${jsonencode(var.server_ipv4_addresses)}
     index = ${count.index}

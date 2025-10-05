@@ -2,7 +2,7 @@ terraform {
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
-      version = "3.0.2"
+      version = "3.6.2"
     }
     null = {
       source  = "hashicorp/null"
@@ -147,7 +147,7 @@ variable "minio_region" {
 
 variable "loki_version" {
   type        = string
-  default     = "3.3.2"
+  default     = "3.5.1"
   description = "The version of Loki to use"
 }
 
@@ -177,7 +177,7 @@ variable "prometheus_port" {
 
 variable "cadvisor_version" {
   type        = string
-  default     = "v0.49.2"
+  default     = "v0.52.0"
   description = "The version of cAdvisor to use"
 }
 
@@ -189,7 +189,7 @@ variable "cadvisor_port" {
 
 variable "grafana_version" {
   type        = string
-  default     = "11.4.0"
+  default     = "12.0.2"
   description = "The version of Grafana to use"
 }
 
@@ -291,7 +291,7 @@ locals {
 }
 
 provider "docker" {
-  host     = var.is_local_test_environment ? "unix:///var/run/docker.sock" : "ssh://root@${var.server_ipv6_address}"
+  host     = var.is_local_test_environment ? "unix:///var/run/docker.sock" : "ssh://root@${var.server_ipv6_address}:22"
   ssh_opts = var.is_local_test_environment ? [] : ["-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-i", var.ssh_key_path]
 }
 
