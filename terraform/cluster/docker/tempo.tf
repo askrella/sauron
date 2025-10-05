@@ -1,9 +1,3 @@
-variable "tempo_version" {
-  type        = string
-  default     = "2.6.1"
-  description = "The version of Tempo to use"
-}
-
 variable "tempo_port" {
   type        = number
   default     = 3200

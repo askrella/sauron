@@ -1,5 +1,5 @@
 resource "docker_image" "mariadb" {
-  name         = "bitnami/mariadb-galera:11.4.4"
+  name         = "bitnamilegacy/mariadb-galera:${var.mariadb_galera_version}" # TODO: Move EVERYTHING off bitnami, they pulled everything and broke production systems by doing this
   keep_locally = true
 
   depends_on = [null_resource.docker_network]

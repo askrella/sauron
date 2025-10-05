@@ -1,5 +1,5 @@
 resource "docker_image" "alloy" {
-  name         = "grafana/alloy-dev:v1.7.0-devel-adf80dbfe"
+  name         = var.alloy_image
   keep_locally = true
 
   depends_on = [null_resource.docker_network]
