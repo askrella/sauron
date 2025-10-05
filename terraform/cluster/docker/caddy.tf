@@ -1,5 +1,5 @@
 resource "docker_image" "caddy" {
-  name         = "caddy:2.9"
+  name         = "caddy:${var.caddy_version}"
   keep_locally = true
 
   depends_on = [null_resource.docker_network]

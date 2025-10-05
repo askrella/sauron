@@ -2,7 +2,7 @@ terraform {
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = ">= 4.49.1"
+      version = ">= 5.11.0"
     }
   }
 }
@@ -67,20 +67,19 @@ resource "cloudflare_load_balancer_pool" "pool" {
   name    = "monitoring-cluster-pool"
   monitor = cloudflare_load_balancer_monitor.monitor[0].id
 
-  dynamic "origins" {
-    //TODO: when ipv6 is enabled, us it; fallback to ipv4
-    for_each = { for i, addr in var.ipv6_addresses : i => addr }
-    content {
-      name    = "node-${origins.key}"
-      address = "node-${origins.key}.${var.domain}"
-      header {
-        header = "Host"
-        values = ["node-${origins.key}.${var.domain}"]
+  origins = [
+    for i, addr in var.ipv6_addresses : {
+      name    = "node-${i}"
+      address = "node-${i}.${var.domain}"
+
+      header  = {
+        host = ["node-${i}.${var.domain}"]
       }
+
       enabled = true
       weight  = 1
     }
-  }
+  ]
 
   account_id = var.cloudflare_account_id
 }
@@ -89,10 +88,12 @@ resource "cloudflare_load_balancer_pool" "pool" {
 data "cloudflare_zone" "domain" {
   count = var.cloudflare_api_token == "" ? 0 : 1 # Option to disable by providing no token
 
-  name = var.base_domain
+  filter = {
+    name = var.base_domain
+  }
 }
 
-resource "cloudflare_record" "monitoring_nodes_ipv6" {
+resource "cloudflare_dns_record" "monitoring_nodes_ipv6" {
   count   = var.cloudflare_api_token == "" ? 0 : length(var.ipv6_addresses)
   zone_id = data.cloudflare_zone.domain[0].id
   name    = "node-${count.index}.${var.domain}"
@@ -102,7 +103,7 @@ resource "cloudflare_record" "monitoring_nodes_ipv6" {
   ttl     = 60
 }
 
-resource "cloudflare_record" "monitoring_nodes_ipv4" {
+resource "cloudflare_dns_record" "monitoring_nodes_ipv4" {
   count   = var.cloudflare_api_token == "" ? 0 : length(var.ipv4_addresses)
   zone_id = data.cloudflare_zone.domain[0].id
   name    = "node-${count.index}.${var.domain}"
@@ -118,8 +119,8 @@ resource "cloudflare_load_balancer" "lb" {
 
   zone_id          = data.cloudflare_zone.domain[0].id
   name             = var.domain
-  default_pool_ids    = [cloudflare_load_balancer_pool.pool[0].id]
-  fallback_pool_id    = cloudflare_load_balancer_pool.pool[0].id
+  default_pools    = [cloudflare_load_balancer_pool.pool[0].id]
+  fallback_pool    = cloudflare_load_balancer_pool.pool[0].id
   enabled          = true
   proxied          = true
   session_affinity = "cookie"

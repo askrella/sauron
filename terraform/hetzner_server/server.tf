@@ -2,7 +2,7 @@ terraform {
   required_providers {
     hcloud = {
       source  = "hetznercloud/hcloud"
-      version = "1.49.1"
+      version = "1.53.1"
     }
   }
 }
@@ -115,6 +115,7 @@ resource "hcloud_server" "server" {
   network {
     network_id = hcloud_network.network.id
     ip         = "10.0.0.${each.value + 2}"
+    alias_ips = []
   }
 
   labels = local.labels

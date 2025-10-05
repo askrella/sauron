@@ -2,11 +2,11 @@ terraform {
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
-      version = "3.0.2"
+      version = "3.6.2"
     }
     null = {
       source  = "hashicorp/null"
-      version = "~> 3.0"
+      version = "~> 3.0" # Do NOT upgrade, newer versions seem to have bugs regarding to Apple Silicon
     }
     ssh = {
       source  = "askrella/ssh"
@@ -115,28 +115,10 @@ variable "minio_region" {
   description = "The MinIO region"
 }
 
-variable "loki_version" {
-  type        = string
-  default     = "3.3.2"
-  description = "The version of Loki to use"
-}
-
-variable "promtail_version" {
-  type        = string
-  default     = "3.3.2"
-  description = "The version of Promtail to use"
-}
-
 variable "node_exporter_port" {
   type        = number
   default     = 9100
   description = "The port to expose Node Exporter on"
-}
-
-variable "prometheus_version" {
-  type        = string
-  default     = "v3.1.0-rc.1"
-  description = "The version of Prometheus to use"
 }
 
 variable "prometheus_port" {
@@ -145,22 +127,10 @@ variable "prometheus_port" {
   description = "The port to expose Prometheus on"
 }
 
-variable "cadvisor_version" {
-  type        = string
-  default     = "v0.49.2"
-  description = "The version of cAdvisor to use"
-}
-
 variable "cadvisor_port" {
   type        = number
   default     = 8080
   description = "The port to expose cAdvisor on"
-}
-
-variable "grafana_version" {
-  type        = string
-  default     = "11.4.0"
-  description = "The version of Grafana to use"
 }
 
 variable "grafana_port" {

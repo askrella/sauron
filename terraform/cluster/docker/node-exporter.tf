@@ -1,6 +1,6 @@
 
 resource "docker_image" "node_exporter" {
-  name         = "prom/node-exporter:latest"
+  name         = "prom/node-exporter:${var.node_exporter_version}"
   keep_locally = true
 
   depends_on = [null_resource.docker_network]

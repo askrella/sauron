@@ -1,5 +1,5 @@
 resource "docker_image" "thanos" {
-    name         = "quay.io/thanos/thanos:v0.37.2"
+    name         = "quay.io/thanos/thanos:v0.39.2"
     keep_locally = true
 
     depends_on = [
