@@ -1,5 +1,5 @@
 resource "docker_image" "alloy" {
-  name         = "grafana/alloy-dev:v1.7.0-devel-adf80dbfe"
+  name         = "grafana/alloy:v1.9.2"
   keep_locally = true
 
   depends_on = [null_resource.docker_network]
@@ -15,21 +15,14 @@ resource "docker_container" "alloy" {
     internal = 4317
     external = 4317
     protocol = "tcp"
-    ip       = "::"
+    ip = "0.0.0.0"
   }
 
   ports {
     internal = 4318
     external = 4318
     protocol = "tcp"
-    ip       = "::"
-  }
-
-  ports {
-    internal = 12345
-    external = 12345
-    protocol = "tcp"
-    ip       = "::"
+    ip = "0.0.0.0"
   }
 
   volumes {
@@ -55,7 +48,7 @@ resource "docker_container" "alloy" {
   ]
 
   healthcheck {
-    test         = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:12345/ready"]
+    test         = ["CMD-SHELL", "bash -c 'exec 42<>/dev/tcp/localhost/12345 && echo -e 'GET /-/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&42 && head -1 <&42 | cut -d' ' -f2 | grep -q '^200$' || exit 1 && exec 42<&- && exec 42>&-'"]
     interval     = "30s"
     timeout      = "10s"
     retries      = 3

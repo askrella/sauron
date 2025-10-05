@@ -5,6 +5,7 @@ distributor:
   ring:
     kvstore:
       store: memberlist
+    instance_id: ${ip}
   receivers:
     otlp:
       protocols:
@@ -18,12 +19,15 @@ ingester:
   max_block_bytes: 1_000_000
   max_block_duration: 5m
   lifecycler:
+    id: ${ip}
     ring:
       kvstore:
         store: memberlist
 
 compactor:
   ring:
+    instance_addr: ${ip}
+    instance_id: tempo-${node_id}
     kvstore:
       store: memberlist
   compaction:
@@ -43,6 +47,22 @@ storage:
     wal:
       path: /tmp/tempo/wal
       v2_encoding: snappy
+
+metrics_generator:
+  ring:
+    kvstore:
+      store: memberlist
+  processor:
+    span_metrics: {}
+    service_graphs: {}
+  registry:
+    external_labels:
+      source: tempo
+  storage:
+    path: /tmp/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus-${node_id}:9090/api/v1/write
+        send_exemplars: true
 
 memberlist:
   join_members:

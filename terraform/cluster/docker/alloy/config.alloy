@@ -17,8 +17,8 @@ otelcol.receiver.otlp "default" {
     endpoint = "0.0.0.0:4318"
   }
   output {
-    traces  = [otelcol.processor.transform.upstream_service_name_traces.input]
-    logs  = [otelcol.connector.spanlogs.default.input]
+    traces  = [otelcol.processor.transform.upstream_service_name_traces.input, otelcol.connector.spanlogs.default.input]
+    logs  = [otelcol.exporter.otlphttp.loki.input]
     metrics = [otelcol.exporter.prometheus.default.input]
   }
 }
@@ -55,7 +55,6 @@ otelcol.connector.spanlogs "default" {
 
   output {
     logs = [otelcol.processor.transform.upstream_service_name_logs.input]
-    traces = [otelcol.processor.transform.upstream_service_name_traces.input]
   }
 }
 

@@ -1,6 +1,6 @@
 variable "tempo_version" {
   type        = string
-  default     = "2.6.1"
+  default     = "2.8.1"
   description = "The version of Tempo to use"
 }
 

@@ -2,7 +2,7 @@ terraform {
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
-      version = "3.0.2"
+      version = "3.6.2"
     }
     null = {
       source  = "hashicorp/null"
@@ -21,6 +21,55 @@ provider "ssh" {
 locals {
   working_dir = "/home/docker"
   grafana_plugins_dir = "${local.working_dir}/grafana/config/plugins"
+  grafana_user        = "472"
+  setup_directories_inline = [
+      "set -e",
+      "mkdir -p /var/log/audit",
+      "touch /var/log/audit/audit.log",
+      "mkdir -p ${local.working_dir}",
+      "mkdir -p ${local.working_dir}/mariadb",
+      "mkdir -p ${local.working_dir}/mariadb/data",
+      "mkdir -p ${local.working_dir}/mariadb/config",
+      "mkdir -p ${local.working_dir}/mariadb/backup",
+      "chown -R 1001:1001 ${local.working_dir}/mariadb",
+      "mkdir -p ${local.working_dir}/grafana/config/dashboards",
+      "mkdir -p ${local.grafana_plugins_dir}",
+      "mkdir -p ${local.working_dir}/grafana/config/provisioning/datasources",
+      "mkdir -p ${local.working_dir}/grafana/config/provisioning/alerting",
+      "mkdir -p ${local.working_dir}/grafana/data",
+      "mkdir -p ${local.working_dir}/prometheus/config",
+      "mkdir -p ${local.working_dir}/prometheus/data",
+      "mkdir -p ${local.working_dir}/thanos/sidecar/config",
+      "mkdir -p ${local.working_dir}/thanos/ruler",
+      "mkdir -p ${local.working_dir}/thanos/ruler/config",
+      "mkdir -p ${local.working_dir}/thanos/store",
+      "mkdir -p ${local.working_dir}/thanos/store/config",
+      "mkdir -p ${local.working_dir}/thanos/compactor",
+      "mkdir -p ${local.working_dir}/thanos/compactor/config",
+      "mkdir -p ${local.working_dir}/loki/config",
+      "mkdir -p ${local.working_dir}/loki/data",
+      "mkdir -p ${local.working_dir}/promtail/config",
+      "mkdir -p ${local.working_dir}/promtail/positions",
+      "mkdir -p ${local.working_dir}/etc",
+      "mkdir -p ${local.working_dir}/alloy",
+      "mkdir -p ${local.working_dir}/alloy/config",
+      "mkdir -p ${local.working_dir}/otel",
+      "mkdir -p ${local.working_dir}/otel/config",
+      "mkdir -p ${local.working_dir}/caddy",
+      "mkdir -p ${local.working_dir}/caddy/data",
+      "mkdir -p ${local.working_dir}/caddy/config",
+      "echo '# Custom configuration to prefer IPv6 over IPv4\nprecedence ::/0  100\nprecedence ::ffff:0:0/96  10' > ${local.working_dir}/etc/gai.conf",
+      "chown -R ${local.grafana_user}:${local.grafana_user} ${local.working_dir}/grafana", # Grafana user
+      "chown -R 65534:65534 ${local.working_dir}/prometheus",                              # nobody user
+      "chown -R 10001:10001 ${local.working_dir}/loki",                                    # loki user
+      "chown -R 65534:65534 ${local.working_dir}/thanos",                                   # nobody user for Thanos
+      "if [ -d \"${local.working_dir}/caddy/config\" ]; then",
+      "  echo \"Directory exists\";",
+      "else",
+      "  echo \"Directory does not exist\" >&2;",
+      "  exit 1;",
+      "fi"
+    ]
 }
 
 variable "domain" {
@@ -74,29 +123,10 @@ variable "minio_bucket" {
   description = "The MinIO bucket name"
 }
 
-resource "null_resource" "healthcheck_container" {
-  provisioner "remote-exec" {
-    inline = [
-      "docker run --rm hello-world"
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      host        = var.server_ipv6_address
-      private_key = file(var.ssh_key_path)
-    }
-  }
-
-  depends_on = [
-    docker_image.hello_world,
-    null_resource.ssh_check,
-    null_resource.setup_directories
-  ]
-}
-
-locals {
-  minio_endpoint = "${var.minio_region}.your-objectstorage.com"
+variable "is_local_test_environment" {
+  description = "If true, configures the provider for a local Docker environment."
+  type        = bool
+  default     = false
 }
 
 variable "minio_user" {
@@ -117,7 +147,7 @@ variable "minio_region" {
 
 variable "loki_version" {
   type        = string
-  default     = "3.3.2"
+  default     = "3.5.1"
   description = "The version of Loki to use"
 }
 
@@ -147,7 +177,7 @@ variable "prometheus_port" {
 
 variable "cadvisor_version" {
   type        = string
-  default     = "v0.49.2"
+  default     = "v0.52.0"
   description = "The version of cAdvisor to use"
 }
 
@@ -159,7 +189,7 @@ variable "cadvisor_port" {
 
 variable "grafana_version" {
   type        = string
-  default     = "11.4.0"
+  default     = "12.0.2"
   description = "The version of Grafana to use"
 }
 
@@ -261,20 +291,49 @@ locals {
 }
 
 provider "docker" {
-  host = "ssh://root@${var.server_ipv6_address}:22"
-  ssh_opts = [
-    "-vvv",
-    "-o", "StrictHostKeyChecking=no",
-    "-o", "UserKnownHostsFile=/dev/null",
-    "-o", "ConnectTimeout=10",
-    "-o", "ConnectionAttempts=3",
-    "-o", "BatchMode=no",
-    "-o", "LogLevel=INFO",
-    "-i", var.ssh_key_path,
+  host     = var.is_local_test_environment ? "unix:///var/run/docker.sock" : "ssh://root@${var.server_ipv6_address}:22"
+  ssh_opts = var.is_local_test_environment ? [] : ["-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-i", var.ssh_key_path]
+}
+
+provider "local" {}
+
+resource "null_resource" "healthcheck_container" {
+  count = var.is_local_test_environment ? 0 : 1
+  provisioner "remote-exec" {
+    inline = [
+      "docker run --rm hello-world"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "root"
+      host        = var.server_ipv6_address
+      private_key = file(var.ssh_key_path)
+    }
+  }
+
+  depends_on = [
+    docker_image.hello_world,
+    null_resource.ssh_check,
+    null_resource.setup_directories
   ]
 }
 
+resource "docker_image" "hello_world" {
+  name         = "hello-world:latest"
+  keep_locally = false
+
+  depends_on = [
+    null_resource.ssh_check
+  ]
+}
+
+locals {
+  minio_endpoint = "${var.minio_region}.your-objectstorage.com"
+}
+
 resource "null_resource" "ssh_check" {
+  count = var.is_local_test_environment ? 0 : 1
   provisioner "remote-exec" {
     inline = [
       "echo 'SSH connection test in separate invoke successful to ${var.server_ipv6_address} with index ${var.index}'"
@@ -293,68 +352,8 @@ resource "null_resource" "ssh_check" {
   }
 }
 
-resource "docker_image" "hello_world" {
-  name         = "hello-world:latest"
-  keep_locally = false
-
-  depends_on = [
-    null_resource.ssh_check
-  ]
-}
-
-locals {
-  grafana_user        = "472"
-  setup_directories_inline = [
-      "set -e",
-      "mkdir -p /var/log/audit",
-      "touch /var/log/audit/audit.log",
-      "mkdir -p ${local.working_dir}",
-      "mkdir -p ${local.working_dir}/mariadb",
-      "mkdir -p ${local.working_dir}/mariadb/data",
-      "mkdir -p ${local.working_dir}/mariadb/config",
-      "mkdir -p ${local.working_dir}/mariadb/backup",
-      "chown -R 1001:1001 ${local.working_dir}/mariadb",
-      "mkdir -p ${local.working_dir}/grafana/config/dashboards",
-      "mkdir -p ${local.grafana_plugins_dir}",
-      "mkdir -p ${local.working_dir}/grafana/config/provisioning/datasources",
-      "mkdir -p ${local.working_dir}/grafana/config/provisioning/alerting",
-      "mkdir -p ${local.working_dir}/grafana/data",
-      "mkdir -p ${local.working_dir}/prometheus/config",
-      "mkdir -p ${local.working_dir}/prometheus/data",
-      "mkdir -p ${local.working_dir}/thanos/sidecar/config",
-      "mkdir -p ${local.working_dir}/thanos/ruler",
-      "mkdir -p ${local.working_dir}/thanos/ruler/config",
-      "mkdir -p ${local.working_dir}/thanos/store",
-      "mkdir -p ${local.working_dir}/thanos/store/config",
-      "mkdir -p ${local.working_dir}/thanos/compactor",
-      "mkdir -p ${local.working_dir}/thanos/compactor/config",
-      "mkdir -p ${local.working_dir}/loki/config",
-      "mkdir -p ${local.working_dir}/loki/data",
-      "mkdir -p ${local.working_dir}/promtail/config",
-      "mkdir -p ${local.working_dir}/promtail/positions",
-      "mkdir -p ${local.working_dir}/etc",
-      "mkdir -p ${local.working_dir}/alloy",
-      "mkdir -p ${local.working_dir}/alloy/config",
-      "mkdir -p ${local.working_dir}/otel",
-      "mkdir -p ${local.working_dir}/otel/config",
-      "mkdir -p ${local.working_dir}/caddy",
-      "mkdir -p ${local.working_dir}/caddy/data",
-      "mkdir -p ${local.working_dir}/caddy/config",
-      "echo '# Custom configuration to prefer IPv6 over IPv4\nprecedence ::/0  100\nprecedence ::ffff:0:0/96  10' > ${local.working_dir}/etc/gai.conf",
-      "chown -R ${local.grafana_user}:${local.grafana_user} ${local.working_dir}/grafana", # Grafana user
-      "chown -R 65534:65534 ${local.working_dir}/prometheus",                              # nobody user
-      "chown -R 10001:10001 ${local.working_dir}/loki",                                    # loki user
-      "chown -R 65534:65534 ${local.working_dir}/thanos",                                   # nobody user for Thanos
-      "if [ -d \"${local.working_dir}/caddy/config\" ]; then",
-      "  echo \"Directory exists\";",
-      "else",
-      "  echo \"Directory does not exist\" >&2;",
-      "  exit 1;",
-      "fi"
-    ]
-}
-
 resource "null_resource" "setup_directories" {
+  count = var.is_local_test_environment ? 0 : 1
   provisioner "remote-exec" {
     inline = local.setup_directories_inline
 
@@ -475,6 +474,7 @@ resource "ssh_file" "gai_conf" {
 }
 
 resource "null_resource" "set_ownership" {
+  count = var.is_local_test_environment ? 0 : 1
   provisioner "remote-exec" {
     inline = [
       "chown -R ${local.grafana_user}:${local.grafana_user} ${local.working_dir}/grafana",
@@ -493,4 +493,35 @@ resource "null_resource" "set_ownership" {
   }
 
   depends_on = [ssh_directory.service_dirs]
+}
+
+# --- LOCAL TEST ENVIRONMENT RESOURCES ---
+
+resource "local_file" "gai_conf_local" {
+  count    = var.is_local_test_environment ? 1 : 0
+  content  = "options single-request-reopen"
+  filename = "${path.module}/gai.conf" # Create it locally to be mounted
+}
+
+resource "null_resource" "setup_directories_local" {
+  count = var.is_local_test_environment ? 1 : 0
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      mkdir -p ${local.working_dir}/grafana/config/provisioning/dashboards
+      mkdir -p ${local.working_dir}/grafana/config/provisioning/datasources
+      mkdir -p ${local.working_dir}/grafana/config/plugins
+      mkdir -p ${local.working_dir}/loki
+      mkdir -p ${local.working_dir}/prometheus
+      mkdir -p ${local.working_dir}/promtail
+      mkdir -p ${local.working_dir}/tempo
+      mkdir -p ${local.working_dir}/caddy/config
+      mkdir -p ${local.working_dir}/caddy/data
+      mkdir -p ${local.working_dir}/mariadb
+      mkdir -p ${local.working_dir}/thanos-ruler
+      mkdir -p ${local.working_dir}/thanos-store
+      mkdir -p ${local.working_dir}/thanos-compactor
+      mkdir -p ${local.working_dir}/alloy
+    EOT
+  }
 }
